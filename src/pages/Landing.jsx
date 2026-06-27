@@ -8,7 +8,7 @@ import ThemeCard from '../components/ThemeCard'
 import { features, themes, previewBooks } from '../data/mockData'
 
 const floatingPhotos = [
-  { src: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=160&h=160&fit=crop', x: '6%', y: '20%', delay: 0, rotate: -12 },
+  { src: 'https://www.istockphoto.com/photo/a-view-up-into-the-trees-direction-sky-gm1317323736-404791748', x: '6%', y: '20%', delay: 0, rotate: -12 },
   { src: 'https://images.unsplash.com/photo-1522673605300-519db4893ebf?w=140&h=140&fit=crop', x: '86%', y: '14%', delay: 0.5, rotate: 9 },
   { src: 'https://images.unsplash.com/photo-1493612276216-ee3925520721?w=150&h=150&fit=crop', x: '80%', y: '66%', delay: 1, rotate: -7 },
   { src: 'https://images.unsplash.com/photo-1516589178581-6ec78340e8b0?w=140&h=140&fit=crop', x: '4%', y: '60%', delay: 1.5, rotate: 14 },
