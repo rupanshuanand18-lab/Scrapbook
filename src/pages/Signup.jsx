@@ -25,7 +25,7 @@ export default function Signup() {
   const handleSubmit = (e) => {
     e.preventDefault()
     signup(name, email)
-    navigate('/dashboard')
+    navigate("/capture")
   }
 
   const handleGoogle = () => {
