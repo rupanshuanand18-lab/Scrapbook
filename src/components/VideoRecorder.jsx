@@ -43,6 +43,7 @@ export default function VideoRecorder({ streamRef, showSuccess }) {
       setIsRecording(true);
 
     } catch (err) {
+      showSuccess("❌ Couldn't record video");
       console.error(err);
     }
   }

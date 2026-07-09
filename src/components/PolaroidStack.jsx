@@ -17,16 +17,16 @@ export default function PolaroidStack({ photos }) {
             }}
             animate={{
               opacity: 1,
-              y: index * 10,
+              y: index * 12,
               scale: 1,
-              rotate: index === 0 ? 6 : -5,
+              rotate: index === 0 ? -5 : 6,
             }}
             exit={{
               opacity: 0,
               scale: 0.5,
             }}
             transition={{
-              duration: 0.35,
+              duration: 0.45,
             }}
             className="absolute bg-white p-2 rounded-md shadow-2xl"
             style={{
