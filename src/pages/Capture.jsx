@@ -25,6 +25,7 @@ export default function Capture() {
 
   const [successMessage, setSuccessMessage] = useState("");
 
+
   useEffect(() => {
     startCamera();
 
@@ -41,7 +42,7 @@ export default function Capture() {
             ideal: cameraFacing,
           },
         },
-        audio: true,
+        audio: false,
       });
 
       streamRef.current = stream;
@@ -91,14 +92,14 @@ export default function Capture() {
         playsInline
         className="absolute inset-0 h-full w-full object-cover"
       />
-{flash && (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ duration: 0.08 }}
-    className="absolute inset-0 z-50 bg-white pointer-events-none"
-  />
-)}
+      {flash && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.08 }}
+          className="absolute inset-0 z-50 bg-white pointer-events-none"
+        />
+      )}
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
 
@@ -111,44 +112,47 @@ export default function Capture() {
       {/* Bottom Controls */}
       <div className="absolute bottom-10 left-0 right-0">
 
-  <motion.p
-    animate={{
-        opacity: [0.4, 1, 0.4],
-    }}
-    transition={{
-        repeat: Infinity,
-        duration: 2,
-    }}
-    className="mb-5 text-center text-sm text-white/70"
->
-    Hold 🎤 to record • Release to save
-</motion.p>
+        <motion.p
+          animate={{
+            opacity: [0.4, 1, 0.4],
+          }}
+          transition={{
+            repeat: Infinity,
+            duration: 2,
+          }}
+          className="mb-5 text-center text-sm text-white/70"
+        >
+          Hold 🎤 to record • Release to save
+        </motion.p>
 
-  <div className="flex items-center justify-center gap-10">
+        <div className="flex items-center justify-center gap-10">
 
-      ...
+          <VoiceRecorder
+            streamRef={streamRef}
+            stopCamera={stopCamera}
+            startCamera={startCamera}
+            showSuccess={showSuccess}
+          />
 
-          <VoiceRecorder />
+          <Photo
+            videoRef={videoRef}
+            flash={flash}
+            setFlash={setFlash}
+            setCapture={(image) => {
+              setPhotos((prev) => {
+                const updated = [
+                  {
+                    id: crypto.randomUUID(),
+                    image,
+                    date: "Just Now",
+                  },
+                  ...prev,
+                ];
 
-        <Photo
-  videoRef={videoRef}
-  flash={flash}
-  setFlash={setFlash}
-  setCapture={(image) => {
-    setPhotos((prev) => {
-      const updated = [
-        {
-          id: crypto.randomUUID(),
-          image,
-          date: "Just Now",
-        },
-        ...prev,
-      ];
-
-      return updated.slice(0, 2);
-    });
-  }}
-/>
+                return updated.slice(0, 2);
+              });
+            }}
+          />
           <VideoRecorder
             streamRef={streamRef}
             showSuccess={showSuccess}

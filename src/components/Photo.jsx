@@ -1,12 +1,12 @@
 import { motion } from "framer-motion";
 
-export default 
-function Photo({
-  videoRef,
-  flash,
-  setFlash,
-  setCapture,
-}) {
+export default
+  function Photo({
+    videoRef,
+    flash,
+    setFlash,
+    setCapture,
+  }) {
   function capturePhoto() {
     if (!videoRef.current) return;
 
@@ -49,7 +49,7 @@ function Photo({
         <div className="h-14 w-14 rounded-full bg-white shadow-xl" />
       </motion.button>
 
-     
+
     </>
   );
 }
