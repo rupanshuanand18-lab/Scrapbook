@@ -10,6 +10,8 @@ import Dashboard from './pages/Dashboard'
 import BookDetail from './pages/BookDetail'
 import MemoryTimeline from './pages/MemoryTimeline'
 import Capture from "./pages/Capture";
+import Welcome from "./pages/Welcome";
+import Community from "./pages/Community";
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -20,12 +22,44 @@ function AnimatedRoutes() {
         <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
         <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
         <Route path="/signup" element={<PageTransition><Signup /></PageTransition>} />
-        <Route path="/capture"element={<Capture />}/>
+        <Route
+          path="/welcome"
+          element={
+            <ProtectedRoute>
+              <PageTransition>
+                <Welcome />
+              </PageTransition>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/capture"
+          element={
+            <ProtectedRoute>
+              <PageTransition>
+                <Capture />
+              </PageTransition>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <PageTransition><Dashboard /></PageTransition>
+              <PageTransition>
+                <Dashboard />
+              </PageTransition>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/community"
+          element={
+            <ProtectedRoute>
+              <PageTransition>
+                <Community />
+              </PageTransition>
             </ProtectedRoute>
           }
         />
@@ -60,13 +94,3 @@ export default function App() {
   )
 }
 
-<Route
-  path="/capture"
-  element={
-    <ProtectedRoute>
-      <PageTransition>
-        <Capture />
-      </PageTransition>
-    </ProtectedRoute>
-  }
-/>

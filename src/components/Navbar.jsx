@@ -5,6 +5,7 @@ import { BookOpen, LogOut, Menu, X, Compass, Layers, Heart } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import Button from './ui/Button'
 
+
 export default function Navbar({ transparent = false }) {
   const { user, logout } = useApp()
   const navigate = useNavigate()
@@ -71,6 +72,14 @@ export default function Navbar({ transparent = false }) {
                 <Link to="/dashboard" className="text-[10px] uppercase tracking-[0.18em] font-semibold text-ink-muted hover:text-ink transition-colors duration-300">
                   My Bookshelf
                 </Link>
+
+                <Link
+                    to="/community"
+                    className="nav-link"
+                  >
+                    <Compass size={18} />
+                    <span>Community</span>
+                  </Link>
                 <div className="flex items-center gap-4 pl-5 border-l border-beige/60">
                   <div className="flex items-center gap-2.5 group cursor-pointer">
                     <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover ring-2 ring-pink-accent/30 group-hover:ring-pink-accent/60 transition-all duration-300 shadow-sm" />
