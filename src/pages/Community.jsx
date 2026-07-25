@@ -1,14 +1,11 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search,
   BookOpen,
   Sparkles,
-  X,
-  Heart,
-  PenLine,
   ArrowRight,
-  Send,
+  SmilePlus,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
@@ -22,27 +19,16 @@ export default function Community() {
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
 
-  // Notes notebook state
-  const [notesOpen, setNotesOpen] = useState(false)
-  const [selectedVolume, setSelectedVolume] = useState(null)
+  // Selected single emoji reaction per volume id: { [volumeId]: '❤️' }
+  const [userReactions, setUserReactions] = useState({})
 
-  // Appreciate state (Simple bookmark/like toggle, no public count)
-  const [appreciated, setAppreciated] = useState([])
+  // Track which reaction bar slider is open: volumeId | null
+  const [openReactionSlider, setOpenReactionSlider] = useState(null)
 
-  // New Note (Comment) form state
-  const [newNoteAuthor, setNewNoteAuthor] = useState('')
-  const [newNoteText, setNewNoteText] = useState('')
-
-  // Close modal on Escape key press
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && notesOpen) {
-        closeNotes()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [notesOpen])
+  // -----------------------------
+  // EMOJI REACTION OPTIONS (6 Emojis)
+  // -----------------------------
+  const reactionEmojis = ['❤️', '✨', '🥹', '🌸', '☕', '👏']
 
   // -----------------------------
   // CATEGORIES
@@ -58,9 +44,9 @@ export default function Community() {
   ]
 
   // -----------------------------
-  // SAMPLE COMMUNITY DATA (Notes as comments with usernames)
+  // SAMPLE COMMUNITY DATA
   // -----------------------------
-  const [sharedVolumes, setSharedVolumes] = useState([
+  const sharedVolumes = [
     {
       id: 1,
       title: 'Summer in Goa',
@@ -71,23 +57,6 @@ export default function Community() {
       description:
         'A week filled with sunsets, beaches and unforgettable memories.',
       memories: 18,
-      notes: [
-        {
-          id: 101,
-          author: 'Priya',
-          text: 'The sunset by the beach looked magical! Reminded me of my trip.',
-        },
-        {
-          id: 102,
-          author: 'Rahul',
-          text: 'Which café did you visit near the sea?',
-        },
-        {
-          id: 103,
-          author: 'Sneha',
-          text: 'The last photo memory was my absolute favourite.',
-        },
-      ],
     },
     {
       id: 2,
@@ -98,18 +67,6 @@ export default function Community() {
       description:
         'New faces, new classrooms and memories that changed everything.',
       memories: 12,
-      notes: [
-        {
-          id: 201,
-          author: 'Aarav',
-          text: 'First days are always nerve-wracking but memorable!',
-        },
-        {
-          id: 202,
-          author: 'Ayush',
-          text: 'Glad you met such wonderful people.',
-        },
-      ],
     },
     {
       id: 3,
@@ -120,13 +77,6 @@ export default function Community() {
         'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1200&q=80',
       description: 'Some mornings deserve to be remembered forever.',
       memories: 9,
-      notes: [
-        {
-          id: 301,
-          author: 'Neha',
-          text: 'Walking by the river in early morning is peaceful.',
-        },
-      ],
     },
     {
       id: 4,
@@ -138,18 +88,6 @@ export default function Community() {
       description:
         'A weekend filled with laughter, food and people I missed.',
       memories: 24,
-      notes: [
-        {
-          id: 401,
-          author: 'Rohan',
-          text: 'Family time is always the best time.',
-        },
-        {
-          id: 402,
-          author: 'Priya',
-          text: 'Old stories shared over dinner are priceless.',
-        },
-      ],
     },
     {
       id: 5,
@@ -161,15 +99,8 @@ export default function Community() {
       description:
         'A simple evening spent creating something without rushing.',
       memories: 7,
-      notes: [
-        {
-          id: 501,
-          author: 'Kavya',
-          text: 'Creating art in silence is so healing.',
-        },
-      ],
     },
-  ])
+  ]
 
   // -----------------------------
   // FILTER COMMUNITY VOLUMES
@@ -188,63 +119,29 @@ export default function Community() {
 
       return matchesCategory && matchesSearch
     })
-  }, [search, activeCategory, sharedVolumes])
+  }, [search, activeCategory])
 
   // -----------------------------
-  // APPRECIATE HANDLER
+  // REACTION HANDLERS
   // -----------------------------
-  const handleAppreciate = (volumeId) => {
-    setAppreciated((previous) => {
-      if (previous.includes(volumeId)) {
-        return previous.filter((id) => id !== volumeId)
+  const toggleReactionSlider = (volumeId) => {
+    setOpenReactionSlider((prev) => (prev === volumeId ? null : volumeId))
+  }
+
+  const handleSelectEmoji = (volumeId, emoji) => {
+    setUserReactions((prev) => {
+      // Deselect if tapping the active emoji again
+      if (prev[volumeId] === emoji) {
+        const next = { ...prev }
+        delete next[volumeId]
+        return next
       }
-      return [...previous, volumeId]
+      // Replace previous emoji with the new one
+      return { ...prev, [volumeId]: emoji }
     })
-  }
 
-  // -----------------------------
-  // NOTES (COMMENTS) HANDLERS
-  // -----------------------------
-  const openNotes = (volume) => {
-    setSelectedVolume(volume)
-    setNotesOpen(true)
-    document.body.style.overflow = 'hidden'
-  }
-
-  const closeNotes = () => {
-    setNotesOpen(false)
-    setSelectedVolume(null)
-    setNewNoteText('')
-    setNewNoteAuthor('')
-    document.body.style.overflow = ''
-  }
-
-  const handleAddNote = (e) => {
-    e.preventDefault()
-    if (!newNoteText.trim() || !selectedVolume) return
-
-    const newNote = {
-      id: Date.now(),
-      author: newNoteAuthor.trim() || 'Guest',
-      text: newNoteText.trim(),
-    }
-
-    // Update shared volumes list
-    setSharedVolumes((prev) =>
-      prev.map((vol) =>
-        vol.id === selectedVolume.id
-          ? { ...vol, notes: [...vol.notes, newNote] }
-          : vol
-      )
-    )
-
-    // Update active selected volume in modal
-    setSelectedVolume((prev) => ({
-      ...prev,
-      notes: [...prev.notes, newNote],
-    }))
-
-    setNewNoteText('')
+    // Automatically close the slider after picking an emoji
+    setOpenReactionSlider(null)
   }
 
   // -----------------------------
@@ -374,7 +271,8 @@ export default function Community() {
           <div className="max-w-4xl mx-auto space-y-10">
             {filteredVolumes.length > 0 ? (
               filteredVolumes.map((volume, index) => {
-                const isAppreciated = appreciated.includes(volume.id)
+                const activeEmoji = userReactions[volume.id]
+                const isSliderOpen = openReactionSlider === volume.id
 
                 return (
                   <motion.article
@@ -496,7 +394,7 @@ export default function Community() {
                         {volume.description}
                       </p>
 
-                      {/* STATS (NO PUBLIC APPRECIATION COUNT) */}
+                      {/* STATS */}
                       <div className="flex items-center gap-10 mt-8 pt-6 border-t border-beige/70">
                         <div>
                           <p className="text-xs uppercase tracking-[0.15em] text-ink-muted">
@@ -506,75 +404,110 @@ export default function Community() {
                             {volume.memories}
                           </p>
                         </div>
-
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.15em] text-ink-muted">
-                            Notes
-                          </p>
-                          <p className="mt-1 text-xl font-semibold text-ink">
-                            {volume.notes.length}
-                          </p>
-                        </div>
                       </div>
 
-                      {/* ACTION BUTTONS */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-8">
-                        {/* APPRECIATE BUTTON */}
-                        <button
-                          type="button"
-                          onClick={() => handleAppreciate(volume.id)}
-                          className={`
-                            h-14
-                            rounded-2xl
-                            border
-                            flex
-                            items-center
-                            justify-center
-                            gap-2
-                            font-medium
-                            transition-all
-                            duration-300
-                            cursor-pointer
-                            ${
-                              isAppreciated
-                                ? 'bg-pink-accent text-white border-pink-accent shadow-md'
-                                : 'bg-pink-accent/90 text-white border-pink-accent hover:bg-pink-accent hover:shadow-md'
-                            }
-                          `}
-                        >
-                          <Heart
-                            className="w-5 h-5 transition-transform active:scale-125"
-                            fill={isAppreciated ? 'currentColor' : 'none'}
-                          />
-                          {isAppreciated ? 'Appreciated' : 'Appreciate'}
-                        </button>
+                      {/* SLIDING EMOJI REACTION SECTION */}
+                      <div className="relative mt-6 pt-5 border-t border-beige/50">
+                        <div className="flex items-center gap-3 overflow-hidden py-1">
+                          {/* REACT BUTTON */}
+                          <button
+                            type="button"
+                            onClick={() => toggleReactionSlider(volume.id)}
+                            className={`
+                              h-12
+                              px-5
+                              rounded-2xl
+                              border
+                              flex
+                              items-center
+                              gap-2.5
+                              font-medium
+                              text-sm
+                              transition-all
+                              duration-300
+                              flex-shrink-0
+                              cursor-pointer
+                              ${
+                                activeEmoji
+                                  ? 'bg-pink-accent/10 border-pink-accent text-pink-accent'
+                                  : 'bg-paper border-beige text-ink hover:border-pink-accent/60'
+                              }
+                            `}
+                          >
+                            {activeEmoji ? (
+                              <span className="text-xl animate-bounce">{activeEmoji}</span>
+                            ) : (
+                              <SmilePlus className="w-5 h-5 text-pink-accent" />
+                            )}
+                            <span>{activeEmoji ? 'Reacted' : 'React'}</span>
+                          </button>
 
-                        {/* NOTES BUTTON */}
-                        <button
-                          type="button"
-                          onClick={() => openNotes(volume)}
-                          className="
-                            h-14
-                            rounded-2xl
-                            border
-                            border-beige
-                            bg-paper
-                            text-ink
-                            flex
-                            items-center
-                            justify-center
-                            gap-2
-                            font-medium
-                            hover:border-pink-accent
-                            hover:text-pink-accent
-                            transition-all
-                            duration-300
-                            cursor-pointer
-                          "
-                        >
-                          <PenLine className="w-5 h-5" />
-                          Notes ({volume.notes.length})
-                        </button>
+                          {/* REVEAL SLIDER */}
+                          <AnimatePresence>
+                            {isSliderOpen && (
+                              <motion.div
+                                initial={{ opacity: 0, x: -30, scaleX: 0.8 }}
+                                animate={{ opacity: 1, x: 0, scaleX: 1 }}
+                                exit={{ opacity: 0, x: -20, scaleX: 0.9 }}
+                                transition={{ duration: 0.28, ease: 'easeOut' }}
+                                className="
+                                  flex
+                                  items-center
+                                  gap-1.5
+                                  p-1.5
+                                  rounded-2xl
+                                  border
+                                  border-beige
+                                  bg-paper
+                                  shadow-sm
+                                  origin-left
+                                "
+                              >
+                                {reactionEmojis.map((emoji, emojiIndex) => {
+                                  const isSelected = activeEmoji === emoji
+
+                                  return (
+                                    <motion.button
+                                      key={emoji}
+                                      type="button"
+                                      initial={{ opacity: 0, scale: 0.5 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                      transition={{
+                                        delay: emojiIndex * 0.03,
+                                        duration: 0.2,
+                                      }}
+                                      onClick={() =>
+                                        handleSelectEmoji(volume.id, emoji)
+                                      }
+                                      className={`
+                                        h-9
+                                        w-9
+                                        sm:h-10
+                                        sm:w-10
+                                        rounded-xl
+                                        text-lg
+                                        flex
+                                        items-center
+                                        justify-center
+                                        transition-all
+                                        duration-150
+                                        cursor-pointer
+                                        active:scale-90
+                                        ${
+                                          isSelected
+                                            ? 'bg-pink-accent/20 scale-110'
+                                            : 'hover:bg-cream hover:scale-110'
+                                        }
+                                      `}
+                                    >
+                                      {emoji}
+                                    </motion.button>
+                                  )
+                                })}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
 
                       {/* OPEN VOLUME BUTTON */}
@@ -584,7 +517,7 @@ export default function Community() {
                         className="
                           w-full
                           h-14
-                          mt-3
+                          mt-6
                           rounded-2xl
                           border
                           border-beige
@@ -638,304 +571,6 @@ export default function Community() {
           </div>
         </div>
       </main>
-
-      {/* NOTEBOOK OVERLAY (COMMENTS SECTION) */}
-      <AnimatePresence>
-        {notesOpen && selectedVolume && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="
-              fixed
-              inset-0
-              z-[100]
-              bg-ink/40
-              backdrop-blur-sm
-              flex
-              items-center
-              justify-center
-              p-4
-              sm:p-6
-            "
-            onClick={closeNotes}
-          >
-            {/* NOTEBOOK CARD */}
-            <motion.div
-              initial={{ opacity: 0, y: 40, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.96 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              onClick={(event) => event.stopPropagation()}
-              className="
-                relative
-                w-full
-                max-w-2xl
-                max-h-[88vh]
-                overflow-hidden
-                rounded-[28px]
-                bg-[#fffdf8]
-                shadow-2xl
-                border
-                border-beige/70
-                flex
-                flex-col
-              "
-            >
-              {/* NOTEBOOK HEADER */}
-              <div className="
-                flex
-                items-center
-                justify-between
-                px-6
-                sm:px-8
-                py-5
-                border-b
-                border-beige/60
-                bg-[#fffdf8]
-                flex-shrink-0
-              ">
-                <div className="flex items-center gap-3">
-                  <div className="
-                    w-10
-                    h-10
-                    rounded-xl
-                    bg-pink-accent/10
-                    flex
-                    items-center
-                    justify-center
-                  ">
-                    <PenLine className="w-5 h-5 text-pink-accent" />
-                  </div>
-
-                  <div>
-                    <h2 className="font-display text-xl sm:text-2xl text-ink">
-                      Notes
-                    </h2>
-                    <p className="text-xs sm:text-sm text-ink-muted mt-0.5">
-                      {selectedVolume.title}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={closeNotes}
-                  aria-label="Close notes"
-                  className="
-                    w-10
-                    h-10
-                    rounded-full
-                    flex
-                    items-center
-                    justify-center
-                    text-ink-muted
-                    hover:text-ink
-                    hover:bg-cream
-                    transition-colors
-                    cursor-pointer
-                  "
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* NOTEBOOK CONTENT */}
-              <div className="relative overflow-y-auto px-6 sm:px-10 py-8">
-                <div className="text-center mb-8">
-                  <div className="
-                    inline-flex
-                    items-center
-                    gap-2
-                    px-4
-                    py-2
-                    rounded-full
-                    bg-pink-accent/10
-                    text-pink-accent
-                    text-xs
-                    uppercase
-                    tracking-[0.15em]
-                    font-semibold
-                  ">
-                    <BookOpen className="w-3.5 h-3.5" />
-                    Shared Notes
-                  </div>
-
-                  <h3 className="font-display text-3xl sm:text-4xl text-ink mt-4">
-                    {selectedVolume.title}
-                  </h3>
-
-                  <p className="text-sm text-ink-muted mt-1">
-                    Notes for {selectedVolume.author}'s volume
-                  </p>
-                </div>
-
-                {/* NOTE ENTRIES (COMMENTS LIST) */}
-                <div className="relative">
-                  {/* Notebook vertical line */}
-                  <div className="absolute left-[19px] top-2 bottom-2 w-px bg-beige" />
-
-                  <div className="space-y-6">
-                    {selectedVolume.notes.map((noteItem, index) => (
-                      <motion.div
-                        key={noteItem.id || index}
-                        initial={{ opacity: 0, x: -15 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05, duration: 0.3 }}
-                        className="relative pl-12"
-                      >
-                        {/* Notebook pin dot */}
-                        <div className="
-                          absolute
-                          left-0
-                          top-1
-                          w-10
-                          h-10
-                          rounded-full
-                          bg-[#fffdf8]
-                          border
-                          border-beige
-                          flex
-                          items-center
-                          justify-center
-                          z-10
-                        ">
-                          <span className="w-2.5 h-2.5 rounded-full bg-pink-accent" />
-                        </div>
-
-                        {/* Note Comment Card */}
-                        <div className="
-                          relative
-                          rounded-2xl
-                          border
-                          border-beige/70
-                          bg-[#fffdf8]
-                          px-5
-                          py-4
-                          shadow-xs
-                        ">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="font-semibold text-sm text-ink">
-                              {noteItem.author}
-                            </span>
-                          </div>
-                          <p className="
-                            font-handwritten
-                            text-xl
-                            sm:text-2xl
-                            leading-relaxed
-                            text-ink-muted
-                          ">
-                            {noteItem.text}
-                          </p>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* ADD A NEW NOTE FORM */}
-                <form
-                  onSubmit={handleAddNote}
-                  className="mt-10 pt-6 border-t border-beige/60"
-                >
-                  <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted mb-3 font-semibold">
-                    Leave a Note
-                  </label>
-                  <div className="flex flex-col gap-3">
-                    <input
-                      type="text"
-                      value={newNoteAuthor}
-                      onChange={(e) => setNewNoteAuthor(e.target.value)}
-                      placeholder="Your name..."
-                      className="
-                        w-full
-                        px-4
-                        py-2.5
-                        rounded-xl
-                        border
-                        border-beige
-                        bg-paper
-                        text-ink
-                        placeholder:text-ink-muted/50
-                        text-sm
-                        outline-none
-                        focus:border-pink-accent
-                        transition-colors
-                      "
-                    />
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newNoteText}
-                        onChange={(e) => setNewNoteText(e.target.value)}
-                        placeholder="Write a note..."
-                        className="
-                          flex-1
-                          px-4
-                          py-3
-                          rounded-xl
-                          border
-                          border-beige
-                          bg-paper
-                          text-ink
-                          placeholder:text-ink-muted/50
-                          text-sm
-                          outline-none
-                          focus:border-pink-accent
-                          transition-colors
-                        "
-                      />
-                      <button
-                        type="submit"
-                        disabled={!newNoteText.trim()}
-                        className="
-                          px-5
-                          py-3
-                          rounded-xl
-                          bg-pink-accent
-                          text-white
-                          font-medium
-                          text-sm
-                          hover:opacity-90
-                          transition-opacity
-                          disabled:opacity-50
-                          disabled:cursor-not-allowed
-                          flex
-                          items-center
-                          gap-2
-                          cursor-pointer
-                        "
-                      >
-                        <span>Post</span>
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </form>
-
-                {/* NOTEBOOK FOOTER */}
-                <div className="
-                  flex
-                  flex-col
-                  items-center
-                  justify-center
-                  mt-8
-                  pt-6
-                  border-t
-                  border-beige/60
-                  text-center
-                ">
-                  <PenLine className="w-5 h-5 text-pink-accent mb-2" />
-                  <p className="font-handwritten text-xl text-ink-muted">
-                    Every memory has a story behind it.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
