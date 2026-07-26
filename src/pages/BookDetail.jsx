@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Calendar, Users, Edit3, Eye, Plus, Palette } from 'lucide-react'
+import { Calendar, Edit3, Eye, Plus, Palette } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Button from '../components/ui/Button'
 import ThemeCard from '../components/ThemeCard'

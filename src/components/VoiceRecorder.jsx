@@ -57,6 +57,8 @@ export default function VoiceRecorder({
         const blob = new Blob(audioChunksRef.current, {
           type: "audio/webm",
         });
+        const audioUrl = URL.createObjectURL(blob);
+        URL.revokeObjectURL(audioUrl);
 
 
 

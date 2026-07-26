@@ -12,6 +12,7 @@ import MemoryTimeline from './pages/MemoryTimeline'
 import Capture from "./pages/Capture";
 import Welcome from "./pages/Welcome";
 import Community from "./pages/Community";
+import EditProfile from "./pages/EditProfile";
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -59,6 +60,16 @@ function AnimatedRoutes() {
             <ProtectedRoute>
               <PageTransition>
                 <Community />
+              </PageTransition>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/edit-profile"
+          element={
+            <ProtectedRoute>
+              <PageTransition>
+                <EditProfile />
               </PageTransition>
             </ProtectedRoute>
           }

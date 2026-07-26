@@ -75,14 +75,7 @@ export default function BookCard({ book, index = 0, shelf = false }) {
         </div>
       </div>
 
-      <div className="mt-4 px-1">
-        <h3 className="font-display font-semibold text-ink text-base line-clamp-1 group-hover:text-pink-accent transition-colors duration-300">
-          {book.title}
-        </h3>
-        <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-ink-muted mt-1.5">
-          {book.memoryCount} moments · <span className="capitalize">{book.type}</span>
-        </p>
-      </div>
+
     </motion.div>
   )
 
