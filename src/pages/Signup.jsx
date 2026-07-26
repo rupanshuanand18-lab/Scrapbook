@@ -25,13 +25,13 @@ export default function Signup() {
   const handleSubmit = (e) => {
     e.preventDefault()
     signup(name, email)
-    navigate("/capture")
+    navigate("/welcome")
   }
 
-  const handleGoogle = () => {
-    signup('Priya Sharma', 'priya@example.com')
-    navigate('/dashboard')
-  }
+   const handleGoogle = () => {
+  signup('Priya Sharma', 'priya@example.com')
+    navigate("/welcome")
+}
 
   return (
     <div className="min-h-screen grid lg:grid-cols-12 overflow-hidden paper-texture">

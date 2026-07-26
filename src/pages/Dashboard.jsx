@@ -7,6 +7,7 @@ import SearchBar from '../components/ui/SearchBar'
 import Button from '../components/ui/Button'
 import EmptyState from '../components/ui/EmptyState'
 import CreateBookModal from '../components/CreateBookModal'
+import Profile from '../components/Profile'
 import { useApp } from '../context/AppContext'
 import { activityFeed, getUserById } from '../data/mockData'
 
@@ -31,6 +32,12 @@ export default function Dashboard() {
     return matchesSearch && matchesFilter
   })
 
+  // Group books into shelves of max 3
+  const chunkedBooks = []
+  for (let i = 0; i < filtered.length; i += 3) {
+    chunkedBooks.push(filtered.slice(i, i + 3))
+  }
+
   const personalCount = books.filter((b) => !b.isShared).length
   const sharedCount = books.filter((b) => b.isShared).length
   const totalMemories = books.reduce((acc, curr) => acc + (curr.memoryCount || 0), 0)
@@ -40,27 +47,18 @@ export default function Dashboard() {
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 pt-28 sm:pt-32 pb-24">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          className="mb-14 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 border-b border-beige/40 pb-8"
-        >
-          <div className="page-marker pl-4">
-            <p className="font-handwritten text-xl text-pink-accent/70 mb-2">welcome home</p>
-            <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-ink leading-none">
-              Hello, {user?.name?.split(' ')[0] || 'Memory Keeper'}
-            </h1>
-            <p className="text-ink-muted text-sm sm:text-base mt-3 font-sans max-w-md">
-              Your bookshelf is waiting. Which chapter will you open today?
-            </p>
-          </div>
-          <Button onClick={() => setShowCreate(true)} className="sm:self-end">
-            <Plus className="w-4 h-4" /> New Volume
-          </Button>
-        </motion.div>
+        <div className="grid lg:grid-cols-12 gap-10 items-start mb-10">
+          {/* Profile Section - Full Width Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.6 }}
+            className="lg:col-span-8 space-y-7"
+          >
+            <Profile />
+          </motion.div>
 
-        <div className="grid lg:grid-cols-12 gap-10 items-start">
+          {/* Stats and Activity Grid */}
 
           <motion.div
             initial={{ opacity: 0, x: -24 }}
@@ -68,37 +66,6 @@ export default function Dashboard() {
             transition={{ delay: 0.15, duration: 0.6 }}
             className="lg:col-span-4 space-y-7"
           >
-            <div className="scrapbook-card rounded-2xl p-7 border border-beige/40 relative overflow-hidden paper-clip" style={{ rotate: '-0.4deg' }}>
-              <div className="absolute top-0 right-0 w-28 h-28 bg-soft-pink/8 rounded-full blur-2xl pointer-events-none" />
-
-              <div className="flex items-center gap-4 mb-7">
-                <img
-                  src={user?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop'}
-                  alt=""
-                  className="w-14 h-14 rounded-full object-cover ring-2 ring-pink-accent/25 shadow-sm"
-                />
-                <div>
-                  <h3 className="font-display font-semibold text-ink text-lg leading-tight">{user?.name}</h3>
-                  <p className="text-xs text-ink-muted font-sans mt-1">{user?.email}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 border-t border-beige/30 pt-6">
-                <div className="text-center p-3 rounded-xl bg-cream-dark/30 border border-beige/25">
-                  <span className="block text-2xl font-display font-semibold text-ink">{books.length}</span>
-                  <span className="text-[9px] uppercase font-semibold text-ink-muted tracking-[0.15em] font-sans">Volumes</span>
-                </div>
-                <div className="text-center p-3 rounded-xl bg-cream-dark/30 border border-beige/25">
-                  <span className="block text-2xl font-display font-semibold text-ink">{totalMemories}</span>
-                  <span className="text-[9px] uppercase font-semibold text-ink-muted tracking-[0.15em] font-sans">Moments</span>
-                </div>
-                <div className="text-center p-3 rounded-xl bg-cream-dark/30 border border-beige/25">
-                  <span className="block text-2xl font-display font-semibold text-ink">{sharedCount}</span>
-                  <span className="text-[9px] uppercase font-semibold text-ink-muted tracking-[0.15em] font-sans">Shared</span>
-                </div>
-              </div>
-            </div>
-
             <div className="scrapbook-card rounded-2xl p-7 border border-beige/40 space-y-5" style={{ rotate: '0.3deg' }}>
               <h3 className="font-display font-semibold text-ink text-base flex items-center gap-2">
                 <Flame className="w-4 h-4 text-pink-accent" /> Your Story So Far
@@ -129,111 +96,163 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="scrapbook-card rounded-2xl p-7 border border-beige/40" style={{ rotate: '-0.2deg' }}>
-              <h3 className="font-display font-semibold text-ink text-base flex items-center gap-2 mb-6">
-                <Activity className="w-4 h-4 text-pink-accent" /> Latest from Your Pages
-              </h3>
 
-              <div className="space-y-5 relative pl-4 border-l border-beige/45 font-sans">
-                {activityFeed.map((item) => {
-                  const activityUser = getUserById(item.userId)
-                  return (
-                    <div key={item.id} className="relative text-xs">
-                      <div className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-pink-accent/75 border-2 border-paper shadow-sm" />
 
-                      <div className="flex items-start gap-3">
-                        <img
-                          src={activityUser?.avatar}
-                          alt=""
-                          className="w-7 h-7 rounded-full object-cover shadow-sm border border-beige/35"
-                        />
-                        <div className="flex-1">
-                          <p className="text-ink-muted leading-relaxed">
-                            <span className="font-semibold text-ink">{activityUser?.name.split(' ')[0]}</span>{' '}
-                            {item.action}{' '}
-                            <span className="font-medium text-ink italic">"{item.target}"</span>
-                          </p>
-                          <span className="font-handwritten text-sm text-brown-light/80 mt-1 block">{item.time}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
           </motion.div>
+        </div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.15, duration: 0.6 }}
-            className="lg:col-span-8 space-y-7"
-          >
-            <div className="flex flex-col sm:flex-row gap-5 items-stretch sm:items-center justify-between font-sans">
-              <SearchBar value={search} onChange={setSearch} className="flex-1 max-w-sm" />
+        {/* Bookshelf Section */}
+        <motion.div
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.15, duration: 0.6 }}
+          className="space-y-7"
+        >
+          <div className="flex flex-col sm:flex-row gap-5 items-stretch sm:items-center justify-between font-sans">
+            <SearchBar value={search} onChange={setSearch} className="flex-1 max-w-sm" />
 
-              <div className="flex bg-cream-dark/40 p-1.5 rounded-xl border border-beige/70 self-start sm:self-auto gap-1 relative">
-                {filters.map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => setFilter(f.id)}
-                    className={`
+            <div className="flex bg-cream-dark/40 p-1.5 rounded-xl border border-beige/70 self-start sm:self-auto gap-1 relative">
+              {filters.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setFilter(f.id)}
+                  className={`
                       px-5 py-2.5 rounded-lg text-[10px] font-semibold tracking-[0.15em] uppercase transition-all cursor-pointer relative z-10
                       ${filter === f.id ? 'text-ink' : 'text-ink-muted hover:text-ink'}
                     `}
-                  >
-                    {filter === f.id && (
-                      <motion.div
-                        layoutId="activeFilterTab"
-                        className="absolute inset-0 bg-paper-warm border border-beige/60 rounded-lg shadow-sm -z-10"
-                        transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-                      />
-                    )}
-                    {f.label}
-                  </button>
-                ))}
-              </div>
+                >
+                  {filter === f.id && (
+                    <motion.div
+                      layoutId="activeFilterTab"
+                      className="absolute inset-0 bg-paper-warm border border-beige/60 rounded-lg shadow-sm -z-10"
+                      transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+                    />
+                  )}
+                  {f.label}
+                </button>
+              ))}
             </div>
+          </div>
+          {/*
+          <AnimatePresence mode="wait">
+            {filtered.length === 0 ? (
+              <motion.div
+                key="empty-dashboard"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <EmptyState
+                  icon={FolderOpen}
+                  title="No volumes found"
+                  description={search ? "We couldn't find a volume matching your search. Try a different title — every story has a name." : "Your bookshelf is ready for its first volume. Open a new scrapbook and begin preserving the moments that matter."}
+                  actionLabel="Create New Volume"
+                  onAction={() => setShowCreate(true)}
+                />
+              </motion.div>
 
-            <AnimatePresence mode="wait">
-              {filtered.length === 0 ? (
-                <motion.div
-                  key="empty-dashboard"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <EmptyState
-                    icon={FolderOpen}
-                    title="No volumes found"
-                    description={search ? "We couldn't find a volume matching your search. Try a different title — every story has a name." : "Your bookshelf is ready for its first volume. Open a new scrapbook and begin preserving the moments that matter."}
-                    actionLabel="Create New Volume"
-                    onAction={() => setShowCreate(true)}
-                  />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="shelf-dashboard"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  transition={{ duration: 0.5 }}
-                  className="bookshelf-wood rounded-[36px] p-8 sm:p-12 pt-14 relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bookshelf-highlight pointer-events-none rounded-[36px]" />
+            ) : (
+               
+              <motion.div
+                key="shelf-dashboard"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.5 }}
+                className="bookshelf-wood rounded-[36px] p-8 sm:p-12 pt-14 relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bookshelf-highlight pointer-events-none rounded-[36px]" />
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-7 sm:gap-10 items-end relative z-10">
-                    {filtered.map((book, i) => (
-                      <BookCard key={book.id} book={book} index={i} shelf />
-                    ))}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-7 sm:gap-10 items-end relative z-10">
+                  {filtered.map((book, i) => (
+                    <BookCard key={book.id} book={book} index={i} shelf />
+                  ))}
+                </div>
+
+                <div className="h-5 mt-8 bg-gradient-to-b from-black/30 via-black/12 to-transparent rounded-b-2xl" />
+              </motion.div>
+              
+            )}
+          </AnimatePresence>
+          */}
+
+
+          {/* BOOKSHELF DISPLAY */}
+          <AnimatePresence mode="wait">
+            {filtered.length === 0 ? (
+              <motion.div
+                key="empty-dashboard"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <EmptyState
+                  icon={FolderOpen}
+                  title="No volumes found"
+                  description={
+                    search
+                      ? "We couldn't find a volume matching your search. Try a different title — every story has a name."
+                      : 'Your bookshelf is ready for its first volume. Open a new scrapbook and begin preserving the moments that matter.'
+                  }
+                  actionLabel="Create New Volume"
+                  onAction={() => setShowCreate(true)}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="shelf-dashboard"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.5 }}
+                className="bg-[#fdfbf7] space-y-12 sm:space-y-16"
+              >
+                {/* Map over the chunks to create each floating capsule shelf unit matching your reference */}
+                {chunkedBooks.map((shelf, shelfIndex) => (
+                  <div
+                    key={shelfIndex}
+                    className="relative bg-gradient-to-b from-[#e8e2d5] via-[#d5ccbc] to-[#bfb5a2] rounded-[50px] sm:rounded-[70px] p-4 sm:p-8 shadow-[0_15px_35px_rgba(0,0,0,0.08),inset_0_2px_4px_rgba(255,255,255,0.7)] border-[6px] sm:border-[8px] border-[#a89d89] overflow-hidden"
+                  >
+                    {/* Continuous Warm Yellow Neon Glow around the inner perimeter (Top, Bottom, Left, Right) */}
+                    <div className="absolute inset-3 sm:inset-4 rounded-[40px] sm:rounded-[55px] border-[2px] border-yellow-200/80 shadow-[inset_0_0_15px_rgba(253,224,71,0.6),0_0_15px_rgba(250,204,21,0.5)] pointer-events-none z-30" />
+
+                    {/* Inner Wood Cavity Background */}
+                    <div className="absolute inset-4 sm:inset-5 bg-gradient-to-r from-[#e3dbcc] via-[#ede6d8] to-[#e3dbcc] rounded-[38px] sm:rounded-[50px] shadow-[inset_0_5px_15px_rgba(0,0,0,0.12)] -z-10" />
+
+                    {/* Book Grid resting inside the capsule cavity */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 sm:gap-16 items-end px-6 sm:px-16 lg:px-24 relative z-20 py-6 max-w-5xl mx-auto [perspective:1400px]">
+                      {shelf.map((book, i) => (
+                        <div key={book.id} className="flex justify-center group cursor-pointer">
+                          <div className="relative w-[210px] h-[280px] transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(-22deg)_translateY(-10px)_rotateX(2deg)] group-hover:scale-105">
+
+                            {/* Unified Hardcover Wrapper */}
+                            <div className="absolute inset-0 w-full h-full rounded-r-2xl rounded-l-md shadow-[15px_20px_35px_rgba(0,0,0,0.35)] overflow-hidden border-t border-r border-b border-beige/40 bg-white">
+                              {/* Realistic spine hinge crease shadow overlay */}
+                              <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/30 via-black/10 to-transparent pointer-events-none z-20" />
+
+                              {/* The original BookCard fills the entire container seamlessly */}
+                              <div className="w-full h-full">
+                                <BookCard book={book} index={i} shelf />
+                              </div>
+                            </div>
+
+                            {/* 3D Book Pages / Right Thickness Edge */}
+                            <div className="absolute right-0 top-[4px] w-[16px] h-[calc(100%-8px)] bg-gradient-to-r from-zinc-200 via-zinc-100 to-zinc-300 [transform:rotateY(90deg)_translateZ(202px)] origin-right shadow-[inset_0_0_8px_rgba(0,0,0,0.15)] rounded-r-sm" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
                   </div>
+                ))}
 
-                  <div className="h-5 mt-8 bg-gradient-to-b from-black/30 via-black/12 to-transparent rounded-b-2xl" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+
+        </motion.div>
+
       </main>
 
       <CreateBookModal
