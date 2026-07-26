@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
@@ -26,13 +26,14 @@ export default function Capture() {
   const [successMessage, setSuccessMessage] = useState("");
 
 
-  useEffect(() => {
-    startCamera();
+  const stopCamera = useCallback(() => {
+    if (!streamRef.current) return;
 
-    return () => stopCamera();
-  }, [cameraFacing]);
+    streamRef.current.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+  }, []);
 
-  async function startCamera() {
+  const startCamera = useCallback(async () => {
     stopCamera();
 
     try {
@@ -59,13 +60,15 @@ export default function Capture() {
       setLoading(false);
       setError("Unable to open camera.");
     }
-  }
+  }, [cameraFacing, stopCamera]);
 
-  function stopCamera() {
-    if (!streamRef.current) return;
+  useEffect(() => {
+    // Camera startup synchronizes with browser media APIs and updates loading/error state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    startCamera();
 
-    streamRef.current.getTracks().forEach((track) => track.stop());
-  }
+    return () => stopCamera();
+  }, [startCamera, stopCamera]);
 
   function flipCamera() {
     setCameraFacing((prev) =>

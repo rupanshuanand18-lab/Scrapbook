@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BookOpen, LogOut, Menu, X, Compass, Layers, Heart } from 'lucide-react'
+import { BookOpen, LogOut, Menu, X, Compass, Layers, Heart, Camera, UserRound } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import Button from './ui/Button'
 
@@ -74,17 +74,33 @@ export default function Navbar({ transparent = false }) {
                 </Link>
 
                 <Link
-                    to="/community"
-                    className="nav-link"
-                  >
-                    <Compass size={18} />
-                    <span>Community</span>
-                  </Link>
+                  to="/capture"
+                  className="text-[10px] uppercase tracking-[0.18em] font-semibold text-ink-muted hover:text-ink transition-colors duration-300 flex items-center gap-1.5"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  Capture
+                </Link>
+
+                <Link
+                  to="/community"
+                  className="text-[10px] uppercase tracking-[0.18em] font-semibold text-ink-muted hover:text-ink transition-colors duration-300 flex items-center gap-1.5"
+                >
+                  <Compass className="w-3.5 h-3.5" />
+                  Community
+                </Link>
+
+                <Link
+                  to="/edit-profile"
+                  className="text-[10px] uppercase tracking-[0.18em] font-semibold text-ink-muted hover:text-ink transition-colors duration-300 flex items-center gap-1.5"
+                >
+                  <UserRound className="w-3.5 h-3.5" />
+                  Edit Profile
+                </Link>
                 <div className="flex items-center gap-4 pl-5 border-l border-beige/60">
-                  <div className="flex items-center gap-2.5 group cursor-pointer">
+                  <Link to="/edit-profile" className="flex items-center gap-2.5 group cursor-pointer">
                     <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover ring-2 ring-pink-accent/30 group-hover:ring-pink-accent/60 transition-all duration-300 shadow-sm" />
                     <span className="text-[10px] uppercase tracking-[0.15em] font-semibold text-ink-muted group-hover:text-ink transition-colors">{user.name.split(' ')[0]}</span>
-                  </div>
+                  </Link>
                   <button onClick={handleLogout} title="Log out" className="text-ink-muted hover:text-pink-accent cursor-pointer transition-colors p-2 rounded-xl hover:bg-cream-dark/50">
                     <LogOut className="w-4 h-4" />
                   </button>
@@ -135,6 +151,15 @@ export default function Navbar({ transparent = false }) {
                 <>
                   <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="py-2 text-sm font-medium text-ink hover:text-pink-accent transition-colors">
                     My Bookshelf
+                  </Link>
+                  <Link to="/capture" onClick={() => setMenuOpen(false)} className="py-2 text-sm font-medium text-ink hover:text-pink-accent transition-colors flex items-center gap-2">
+                    <Camera className="w-4 h-4" /> Capture
+                  </Link>
+                  <Link to="/community" onClick={() => setMenuOpen(false)} className="py-2 text-sm font-medium text-ink hover:text-pink-accent transition-colors flex items-center gap-2">
+                    <Compass className="w-4 h-4" /> Community
+                  </Link>
+                  <Link to="/edit-profile" onClick={() => setMenuOpen(false)} className="py-2 text-sm font-medium text-ink hover:text-pink-accent transition-colors flex items-center gap-2">
+                    <UserRound className="w-4 h-4" /> Edit Profile
                   </Link>
                   <div className="h-px bg-beige/40 my-1" />
                   <div className="flex items-center justify-between py-2">

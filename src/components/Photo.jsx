@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 export default
   function Photo({
     videoRef,
-    flash,
     setFlash,
     setCapture,
   }) {

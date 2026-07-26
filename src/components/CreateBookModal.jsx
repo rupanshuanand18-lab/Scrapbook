@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { BookOpen, Heart, Users, Compass, Home, Sparkles, Image as ImageIcon } from 'lucide-react'
+import { BookOpen, Heart, Users, Compass, Home, Sparkles } from 'lucide-react'
 import VisualEditorShell from './VisualEditorShell'
 import ImageCanvas from './ImageCanvas'
 import { themes, bookTypes } from '../data/mockData'

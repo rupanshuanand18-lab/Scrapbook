@@ -1,15 +1,12 @@
-import { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { useApp } from '../context/AppContext'
 
 export default function Profile() {
     const { books, user } = useApp()
-    const personalCount = books.filter((b) => !b.isShared).length
     const sharedCount = books.filter((b) => b.isShared).length
     const totalMemories = books.reduce((acc, curr) => acc + (curr.memoryCount || 0), 0)
 
     return (
-        <div className="w-full lg:w-[60%] mx-auto max-w-3xl">
+        <div className="w-full lg:w-[100%] mx-auto max-w-3xl">
             <div className="scrapbook-card rounded-2xl p-6 md:p-7 border border-beige/40 relative overflow-hidden paper-clip" style={{ rotate: '-0.4deg' }}>
                 <div className="absolute top-0 right-0 w-28 h-28 bg-soft-pink/8 rounded-full blur-2xl pointer-events-none" />
 

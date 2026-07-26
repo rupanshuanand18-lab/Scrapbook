@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback } from 'react'
 import { books as initialBooks, memories as initialMemories } from '../data/mockData'
 
@@ -18,6 +19,13 @@ export function AppProvider({ children }) {
   }, [])
 
   const logout = useCallback(() => setUser(null), [])
+
+  const updateUser = useCallback((updates) => {
+    setUser((prev) => ({
+      ...(prev || { id: 'u1', email: 'priya@example.com' }),
+      ...updates,
+    }))
+  }, [])
 
   const signup = useCallback((name, email) => {
     setUser({
@@ -64,6 +72,7 @@ export function AppProvider({ children }) {
         login,
         logout,
         signup,
+        updateUser,
         books,
         memories,
         addBook,
