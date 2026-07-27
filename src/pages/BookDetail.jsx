@@ -6,6 +6,7 @@ import Navbar from '../components/Navbar'
 import Button from '../components/ui/Button'
 import ThemeCard from '../components/ThemeCard'
 import AddMemoryModal from '../components/AddMemoryModal'
+import EditBookModal from '../components/EditBookModal'
 import { useApp } from '../context/AppContext'
 import { getThemeById, getUserById, activityFeed } from '../data/mockData'
 
@@ -14,6 +15,7 @@ export default function BookDetail() {
   const navigate = useNavigate()
   const { books, addMemory, getBookMemories } = useApp()
   const [showAddMemory, setShowAddMemory] = useState(false)
+  const [showEditBook, setShowEditBook] = useState(false)
 
   const book = books.find((b) => b.id === bookId)
 
@@ -97,7 +99,12 @@ export default function BookDetail() {
                       <Eye className="w-4 h-4" /> View Timeline
                     </Button>
                   </Link>
-                  <Button variant="ghost" size="sm" className="flex items-center gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowEditBook(true)}
+                    className="flex items-center gap-1.5 cursor-pointer"
+                  >
                     <Edit3 className="w-4 h-4" /> Edit Volume
                   </Button>
                 </div>
@@ -225,6 +232,13 @@ export default function BookDetail() {
         onClose={() => setShowAddMemory(false)}
         onSave={addMemory}
         bookId={bookId}
+      />
+
+      <EditBookModal
+        isOpen={showEditBook}
+        onClose={() => setShowEditBook(false)}
+        bookId={bookId}
+        onDeleteComplete={() => navigate('/dashboard')}
       />
     </div>
   )

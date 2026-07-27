@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useApp } from '../context/AppContext'
 import {
   Search,
   BookOpen,
@@ -16,6 +17,20 @@ import Navbar from '../components/Navbar'
 
 export default function Community() {
   const navigate = useNavigate()
+  const { openUserProfile, allUsers } = useApp()
+
+  const handleUserClick = (username) => {
+    let mappedUsername = username
+    if (username === 'priyawrites') mappedUsername = 'priyasharma'
+    if (username === 'rahulnotes') mappedUsername = 'rahulkapoor'
+    
+    const matchedUser = allUsers.find(
+      (u) => u.username.toLowerCase() === mappedUsername.toLowerCase()
+    )
+    if (matchedUser) {
+      openUserProfile(matchedUser.id)
+    }
+  }
 
   // -----------------------------
   // COMMUNITY STATE
@@ -480,7 +495,14 @@ export default function Community() {
                         <div className="p-5 sm:p-6">
                           {/* SOCIAL PROFILE HEADER */}
                           <div className="flex items-center justify-between gap-4 mb-5">
-                            <div className="flex items-center gap-3 min-w-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleUserClick(volume.username)
+                              }}
+                              className="flex items-center gap-3 min-w-0 hover:opacity-85 text-left cursor-pointer transition-opacity"
+                            >
                               <img
                                 src={volume.avatar}
                                 alt={`${volume.author} profile`}
@@ -495,7 +517,7 @@ export default function Community() {
                                   {getRelativeTime(volume.timestamp)}
                                 </p>
                               </div>
-                            </div>
+                            </button>
 
                             <span className="px-3 py-1.5 rounded-full bg-paper-warm border border-beige text-xs font-medium text-ink">
                               {volume.category}
@@ -815,7 +837,7 @@ export default function Community() {
                     <button
                       key={creator.id}
                       type="button"
-                      onClick={() => setSearch(creator.username)}
+                      onClick={() => handleUserClick(creator.username)}
                       className="w-full flex items-center gap-3 text-left rounded-2xl transition-colors hover:bg-paper-warm cursor-pointer p-2"
                     >
                       <img

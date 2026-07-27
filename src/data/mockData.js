@@ -73,27 +73,123 @@ export const users = [
   {
     id: 'u1',
     name: 'Priya Sharma',
+    username: 'priyasharma',
     email: 'priya@example.com',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face',
+    bio: 'Memory keeper & story collector. Preserving life\'s beautiful moments, one page at a time. ✨'
   },
   {
     id: 'u2',
     name: 'Arjun Mehta',
+    username: 'arjunmehta',
     email: 'arjun@example.com',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    bio: 'Coffee enthusiast, amateur photographer, and traveler. Searching for stories in tiny lanes.'
   },
   {
     id: 'u3',
     name: 'Sneha Patel',
+    username: 'snehashelf',
     email: 'sneha@example.com',
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+    bio: 'Doodler, dreamer, and diary writer. Making paper cards since 2012.'
   },
   {
     id: 'u4',
     name: 'Rahul Kapoor',
+    username: 'rahulkapoor',
     email: 'rahul@example.com',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
+    bio: 'Music is life. Strumming my guitar and journaling the sunset melodies.'
   },
+  {
+    id: 'u5',
+    name: 'Ayush Kumar',
+    username: 'ayushjournals',
+    email: 'ayush@example.com',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    bio: 'Travel writer, street food critic, and postcard enthusiast.'
+  },
+  {
+    id: 'u6',
+    name: 'Aarav Singh',
+    username: 'aaravsketches',
+    email: 'aarav@example.com',
+    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop&crop=face',
+    bio: 'Ink on paper, ideas on canvas. Capturing city lights and quiet cafes.'
+  },
+  {
+    id: 'u7',
+    name: 'Meera Sen',
+    username: 'meeracreates',
+    email: 'meera@example.com',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
+    bio: 'Bookworm, botanist, and pressed-flower scrapbooker.'
+  },
+  {
+    id: 'u8',
+    name: 'Kabir Dev',
+    username: 'kabirnotes',
+    email: 'kabir@example.com',
+    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face',
+    bio: 'Exploring the mountains and journaling my camping escapes.'
+  },
+  {
+    id: 'u9',
+    name: 'Riya Das',
+    username: 'riyashelf',
+    email: 'riya@example.com',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
+    bio: 'Stitch by stitch, page by page. Vintage aesthetic lover.'
+  },
+  {
+    id: 'u10',
+    name: 'Dev Shah',
+    username: 'devphotos',
+    email: 'dev@example.com',
+    avatar: 'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=150&h=150&fit=crop&crop=face',
+    bio: 'Visual artist. Finding beauty in geometric patterns and warm shadows.'
+  },
+  {
+    id: 'u11',
+    name: 'Ananya Roy',
+    username: 'ananyawrites',
+    email: 'ananya@example.com',
+    avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=150&h=150&fit=crop&crop=face',
+    bio: 'Poetry in motion. Documenting stories that words can\'t fully describe.'
+  },
+  {
+    id: 'u12',
+    name: 'Ishaan Rao',
+    username: 'ishaanfilms',
+    email: 'ishaan@example.com',
+    avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&h=150&fit=crop&crop=face',
+    bio: 'Analog photography devotee. Developing film and memories.'
+  },
+  {
+    id: 'u13',
+    name: 'Diya Nair',
+    username: 'diyanair',
+    email: 'diya@example.com',
+    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop&crop=face',
+    bio: 'Always planning the next trip. Lover of maps and postcards.'
+  },
+  {
+    id: 'u14',
+    name: 'Vikram Gill',
+    username: 'vikramgill',
+    email: 'vikram@example.com',
+    avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&h=150&fit=crop&crop=face',
+    bio: 'Architect, urban sketcher, and history buff.'
+  },
+  {
+    id: 'u15',
+    name: 'Tara Bose',
+    username: 'tarabose',
+    email: 'tara@example.com',
+    avatar: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=150&h=150&fit=crop&crop=face',
+    bio: 'Baking and journaling the recipe of life.'
+  }
 ]
 
 export const books = [
