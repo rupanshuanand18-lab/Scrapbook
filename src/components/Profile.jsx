@@ -1,7 +1,9 @@
 import { useApp } from '../context/AppContext'
 
 export default function Profile() {
-    const { books, user } = useApp()
+    const { books, user, getFollowers, getFollowing, openFollowersModal } = useApp()
+    const followersCount = getFollowers(user?.id || 'u1').length
+    const followingCount = getFollowing(user?.id || 'u1').length
     const sharedCount = books.filter((b) => b.isShared).length
     const totalMemories = books.reduce((acc, curr) => acc + (curr.memoryCount || 0), 0)
 
@@ -35,13 +37,19 @@ export default function Profile() {
 
                     {/* Followers/Following */}
                     <div className="flex items-center gap-3 text-sm">
-                        <span className="font-semibold text-ink">
-                            {user?.followersCount || '1.2k'} <span className="text-ink-muted font-normal">Followers</span>
-                        </span>
+                        <button
+                            onClick={() => openFollowersModal(user?.id || 'u1', 'followers')}
+                            className="font-semibold text-ink hover:text-pink-accent cursor-pointer transition-colors"
+                        >
+                            {followersCount} <span className="text-ink-muted font-normal">Followers</span>
+                        </button>
                         <span className="text-ink-muted">•</span>
-                        <span className="font-semibold text-ink">
-                            {user?.followingCount || 340} <span className="text-ink-muted font-normal">Following</span>
-                        </span>
+                        <button
+                            onClick={() => openFollowersModal(user?.id || 'u1', 'following')}
+                            className="font-semibold text-ink hover:text-pink-accent cursor-pointer transition-colors"
+                        >
+                            {followingCount} <span className="text-ink-muted font-normal">Following</span>
+                        </button>
                     </div>
                 </div>
 
@@ -70,13 +78,19 @@ export default function Profile() {
 
                     {/* Followers/Following */}
                     <div className="flex items-center gap-3 text-sm">
-                        <span className="font-semibold text-ink">
-                            {user?.followersCount || '1.2k'} <span className="text-ink-muted font-normal">Followers</span>
-                        </span>
+                        <button
+                            onClick={() => openFollowersModal(user?.id || 'u1', 'followers')}
+                            className="font-semibold text-ink hover:text-pink-accent cursor-pointer transition-colors"
+                        >
+                            {followersCount} <span className="text-ink-muted font-normal">Followers</span>
+                        </button>
                         <span className="text-ink-muted">•</span>
-                        <span className="font-semibold text-ink">
-                            {user?.followingCount || 340} <span className="text-ink-muted font-normal">Following</span>
-                        </span>
+                        <button
+                            onClick={() => openFollowersModal(user?.id || 'u1', 'following')}
+                            className="font-semibold text-ink hover:text-pink-accent cursor-pointer transition-colors"
+                        >
+                            {followingCount} <span className="text-ink-muted font-normal">Following</span>
+                        </button>
                     </div>
                 </div>
 

@@ -13,85 +13,109 @@ import Capture from "./pages/Capture";
 import Welcome from "./pages/Welcome";
 import Community from "./pages/Community";
 import EditProfile from "./pages/EditProfile";
+import FollowersModal from './components/FollowersModal'
+import UserProfileModal from './components/UserProfileModal'
+import { useApp } from './context/AppContext'
 
 function AnimatedRoutes() {
   const location = useLocation()
+  const { 
+    activeFollowersModal, 
+    closeFollowersModal, 
+    activeUserProfileId, 
+    closeUserProfile 
+  } = useApp()
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
-        <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
-        <Route path="/signup" element={<PageTransition><Signup /></PageTransition>} />
-        <Route
-          path="/welcome"
-          element={
-            <ProtectedRoute>
-              <PageTransition>
-                <Welcome />
-              </PageTransition>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/capture"
-          element={
-            <ProtectedRoute>
-              <PageTransition>
-                <Capture />
-              </PageTransition>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <PageTransition>
-                <Dashboard />
-              </PageTransition>
-            </ProtectedRoute>
-          }
-        />
+    <>
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
+          <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+          <Route path="/signup" element={<PageTransition><Signup /></PageTransition>} />
+          <Route
+            path="/welcome"
+            element={
+              <ProtectedRoute>
+                <PageTransition>
+                  <Welcome />
+                </PageTransition>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/capture"
+            element={
+              <ProtectedRoute>
+                <PageTransition>
+                  <Capture />
+                </PageTransition>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <PageTransition>
+                  <Dashboard />
+                </PageTransition>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/community"
-          element={
-            <ProtectedRoute>
-              <PageTransition>
-                <Community />
-              </PageTransition>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/edit-profile"
-          element={
-            <ProtectedRoute>
-              <PageTransition>
-                <EditProfile />
-              </PageTransition>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/books/:bookId"
-          element={
-            <ProtectedRoute>
-              <PageTransition><BookDetail /></PageTransition>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/books/:bookId/timeline"
-          element={
-            <ProtectedRoute>
-              <PageTransition><MemoryTimeline /></PageTransition>
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </AnimatePresence>
+          <Route
+            path="/community"
+            element={
+              <ProtectedRoute>
+                <PageTransition>
+                  <Community />
+                </PageTransition>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit-profile"
+            element={
+              <ProtectedRoute>
+                <PageTransition>
+                  <EditProfile />
+                </PageTransition>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/books/:bookId"
+            element={
+              <ProtectedRoute>
+                <PageTransition><BookDetail /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/books/:bookId/timeline"
+            element={
+              <ProtectedRoute>
+                <PageTransition><MemoryTimeline /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </AnimatePresence>
+
+      {/* Global Modal Overlays */}
+      <FollowersModal
+        isOpen={!!activeFollowersModal}
+        onClose={closeFollowersModal}
+        userId={activeFollowersModal?.userId}
+        initialTab={activeFollowersModal?.tab}
+      />
+      <UserProfileModal
+        isOpen={!!activeUserProfileId}
+        onClose={closeUserProfile}
+        userId={activeUserProfileId}
+      />
+    </>
   )
 }
 
@@ -104,4 +128,3 @@ export default function App() {
     </AppProvider>
   )
 }
-
