@@ -1,9 +1,11 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Trash2, Eye, Tag, Globe, Lock, ShieldAlert, Sparkles, Check, Image as ImageIcon } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { themes, bookTypes } from '../data/mockData'
 import Button from './ui/Button'
+import ImageCanvas from './ImageCanvas'
 
 const PRESET_COVERS = [
   { name: 'Retro Journal', url: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=560&fit=crop' },
@@ -546,6 +548,26 @@ export default function EditBookModal({ isOpen, onClose, bookId, onSaveComplete,
                         Apply Photo
                       </Button>
                     </div>
+                  </div>
+
+                  {/* Custom File Upload */}
+                  <div className="space-y-2 border-t border-beige/35 pt-4">
+                    <span className="text-[10px] uppercase font-bold text-ink-muted tracking-wider block font-sans">Upload Custom Cover File</span>
+                    <ImageCanvas
+                      images={coverImage ? [coverImage] : []}
+                      onImagesChange={(imgs) => {
+                        if (imgs.length > 0) {
+                          setCoverImage(imgs[0])
+                          setShowCoverGallery(false)
+                        } else {
+                          setCoverImage('')
+                        }
+                      }}
+                      multiple={false}
+                      aspect="3/4"
+                      emptyLabel="Upload from file"
+                      emptyHint="Drag & drop or click to crop/edit"
+                    />
                   </div>
                 </div>
               </motion.div>

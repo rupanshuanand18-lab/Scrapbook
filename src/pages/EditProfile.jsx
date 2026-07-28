@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  Camera,
   Check,
   ChevronLeft,
   Globe2,
-  ImagePlus,
   Loader2,
   Lock,
   Save,
@@ -13,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import ImageCanvas from '../components/ImageCanvas'
 import { useApp } from '../context/AppContext'
 
 const takenUsernames = ['admin', 'community', 'priyasharma', 'memorykeeper']
@@ -28,8 +27,6 @@ function Spinner() {
 export default function EditProfile() {
   const navigate = useNavigate()
   const { user, updateUser } = useApp()
-  const avatarInputRef = useRef(null)
-  const coverInputRef = useRef(null)
 
   const initialProfile = useMemo(
     () => ({
@@ -57,7 +54,6 @@ export default function EditProfile() {
   const [isSaving, setIsSaving] = useState(false)
   const [toast, setToast] = useState(null)
   const [showUnsavedModal, setShowUnsavedModal] = useState(false)
-  const [compressionNote, setCompressionNote] = useState('')
 
   const isDirty = useMemo(() => {
     return (
@@ -124,71 +120,7 @@ export default function EditProfile() {
   const canSave =
     isDirty && !isSaving && usernameStatus === 'available' && bio.length <= 250
 
-  const compressImage = (file, maxWidth = 1600, quality = 0.82) => {
-    if (!file.type.startsWith('image/')) return Promise.reject(new Error('Unsupported file type.'))
-
-    return new Promise((resolve) => {
-      const image = new Image()
-      const objectUrl = URL.createObjectURL(file)
-
-      image.onload = () => {
-        const scale = Math.min(1, maxWidth / image.width)
-        const canvas = document.createElement('canvas')
-        canvas.width = Math.round(image.width * scale)
-        canvas.height = Math.round(image.height * scale)
-
-        const context = canvas.getContext('2d')
-        context.drawImage(image, 0, 0, canvas.width, canvas.height)
-
-        canvas.toBlob(
-          (blob) => {
-            URL.revokeObjectURL(objectUrl)
-            if (!blob) {
-              resolve(file)
-              return
-            }
-
-            const compressed = new File([blob], file.name, {
-              type: blob.type,
-              lastModified: Date.now(),
-            })
-
-            resolve(compressed.size < file.size ? compressed : file)
-          },
-          'image/jpeg',
-          quality,
-        )
-      }
-
-      image.onerror = () => {
-        URL.revokeObjectURL(objectUrl)
-        resolve(file)
-      }
-
-      image.src = objectUrl
-    })
-  }
-
-  const handleImageChange = async (event, type) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setCompressionNote(file.size > 900000 ? 'Optimizing image for faster profile loading...' : '')
-    const processedFile = await compressImage(file, type === 'avatar' ? 700 : 1800)
-    const previewUrl = URL.createObjectURL(processedFile)
-
-    if (type === 'avatar') {
-      if (avatarPreview?.startsWith('blob:')) URL.revokeObjectURL(avatarPreview)
-      setAvatarFile(processedFile)
-      setAvatarPreview(previewUrl)
-    } else {
-      if (coverPreview?.startsWith('blob:')) URL.revokeObjectURL(coverPreview)
-      setCoverFile(processedFile)
-      setCoverPreview(previewUrl)
-    }
-
-    setCompressionNote(processedFile.size < file.size ? 'Image optimized before preview.' : '')
-  }
+  // Image handles are now fully managed by the Universal ImageCanvas component.
 
   const handleCancel = () => {
     if (isDirty) {
@@ -262,69 +194,44 @@ export default function EditProfile() {
           className="scrapbook-card rounded-3xl overflow-hidden border border-beige/50"
         >
           <section className="relative">
-            <button
-              type="button"
-              onClick={() => coverInputRef.current?.click()}
-              className="group relative block w-full aspect-[3/1] min-h-44 overflow-hidden bg-cream-dark cursor-pointer"
-              aria-label="Change cover image"
-            >
-              <img
-                src={coverPreview}
-                alt=""
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-              />
-              <span className="absolute inset-0 bg-ink/10 opacity-0 transition-opacity group-hover:opacity-100" />
-              <span className="absolute right-5 bottom-5 inline-flex h-11 items-center gap-2 rounded-full border border-white/50 bg-paper/90 px-4 text-sm font-medium text-ink shadow-sm backdrop-blur">
-                <ImagePlus className="h-4 w-4 text-pink-accent" />
-                Change cover
-              </span>
-            </button>
-            <input
-              ref={coverInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(event) => handleImageChange(event, 'cover')}
+            <ImageCanvas
+              images={coverPreview ? [coverPreview] : []}
+              onImagesChange={(imgs) => {
+                if (imgs.length > 0) {
+                  setCoverFile(imgs[0])
+                  setCoverPreview(imgs[0])
+                } else {
+                  setCoverFile(null)
+                  setCoverPreview(defaultCover)
+                }
+              }}
+              multiple={false}
+              variant="cover"
+              aspect="3/1"
             />
 
-            <div className="absolute left-6 sm:left-10 -bottom-16">
-              <button
-                type="button"
-                onClick={() => avatarInputRef.current?.click()}
-                className="group relative h-32 w-32 rounded-full border-4 border-paper bg-cream-dark shadow-xl cursor-pointer"
-                aria-label="Change profile picture"
-              >
-                <img
-                  src={avatarPreview}
-                  alt="Profile preview"
-                  className="h-full w-full rounded-full object-cover"
-                />
-                <span className="absolute inset-0 rounded-full bg-ink/20 opacity-0 transition-opacity group-hover:opacity-100" />
-                <span className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-full bg-pink-accent text-white shadow-md">
-                  <Camera className="h-5 w-5" />
-                </span>
-              </button>
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => handleImageChange(event, 'avatar')}
+            <div className="absolute left-6 sm:left-10 -bottom-16 z-20">
+              <ImageCanvas
+                images={avatarPreview ? [avatarPreview] : []}
+                onImagesChange={(imgs) => {
+                  if (imgs.length > 0) {
+                    setAvatarFile(imgs[0])
+                    setAvatarPreview(imgs[0])
+                  } else {
+                    setAvatarFile(null)
+                    setAvatarPreview(defaultAvatar)
+                  }
+                }}
+                multiple={false}
+                variant="avatar"
+                aspect="1/1"
               />
             </div>
           </section>
 
           <div className="grid gap-8 px-6 pb-7 pt-24 sm:px-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
             <div className="space-y-6">
-              {compressionNote && (
-                <motion.p
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-sm font-medium text-pink-accent"
-                >
-                  {compressionNote}
-                </motion.p>
-              )}
+
 
               <div className="grid gap-5 sm:grid-cols-2">
                 <label className="block">

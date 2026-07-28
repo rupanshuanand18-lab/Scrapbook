@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, BookOpen, UserPlus, UserMinus, Flame, Compass } from 'lucide-react'
+import { X, BookOpen, UserPlus, UserMinus, Compass } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 export default function UserProfileModal({ isOpen, onClose, userId }) {
