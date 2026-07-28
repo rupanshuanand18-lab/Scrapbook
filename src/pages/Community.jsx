@@ -12,11 +12,12 @@ import {
   Share2,
   X,
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 
 export default function Community() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { openUserProfile, allUsers } = useApp()
 
   const handleUserClick = (username) => {
@@ -37,7 +38,10 @@ export default function Community() {
   // -----------------------------
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
-  const [activeTab, setActiveTab] = useState('Following')
+  const activeTab = useMemo(() => {
+    const queryTab = searchParams.get('tab')
+    return queryTab === 'Discover' ? 'Discover' : 'Following'
+  }, [searchParams])
   const [carouselIndexes, setCarouselIndexes] = useState({})
   const [expandedDescriptions, setExpandedDescriptions] = useState({})
   const [gallery, setGallery] = useState(null)
@@ -306,7 +310,7 @@ export default function Community() {
       <Navbar />
 
       {/* MAIN COMMUNITY CONTENT */}
-      <main className="pt-28 sm:pt-32 pb-20">
+      <main className="pt-28 sm:pt-32 pb-32 sm:pb-24">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
 
           {/* COMMUNITY HEADER */}
@@ -374,7 +378,11 @@ export default function Community() {
               <button
                 key={tab}
                 type="button"
-                onClick={() => setActiveTab(tab)}
+                onClick={() => {
+                  const next = new URLSearchParams(searchParams)
+                  next.set('tab', tab)
+                  setSearchParams(next, { replace: true })
+                }}
                 className={`relative h-11 flex-1 rounded-xl text-sm font-medium transition-colors duration-300 cursor-pointer
                   ${activeTab === tab ? 'text-white' : 'text-ink-muted hover:text-ink'}
                 `}
@@ -794,7 +802,9 @@ export default function Community() {
                       onClick={() => {
                         setSearch('')
                         setActiveCategory('All')
-                        setActiveTab('Discover')
+                        const next = new URLSearchParams(searchParams)
+                        next.set('tab', 'Discover')
+                        setSearchParams(next, { replace: true })
                       }}
                       className="mt-6 text-sm font-medium text-pink-accent hover:underline cursor-pointer"
                     >

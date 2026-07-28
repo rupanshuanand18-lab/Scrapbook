@@ -42,7 +42,7 @@ export default function Dashboard() {
     <div className="min-h-screen paper-texture">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 pt-28 sm:pt-32 pb-24">
+      <main className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 pt-28 sm:pt-32 pb-32 sm:pb-24">
         <div className="grid lg:grid-cols-12 gap-10 items-start mb-10">
           {/* Profile Section - Full Width Grid */}
           <motion.div

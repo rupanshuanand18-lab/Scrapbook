@@ -39,7 +39,7 @@ export default function MemoryTimeline() {
     <div className="min-h-screen paper-texture">
       <Navbar />
 
-      <main className="max-w-4xl mx-auto px-5 sm:px-8 pt-28 pb-24">
+      <main className="max-w-4xl mx-auto px-5 sm:px-8 pt-28 pb-32 sm:pb-24">
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

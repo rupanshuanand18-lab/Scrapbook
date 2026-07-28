@@ -163,7 +163,7 @@ export default function EditProfile() {
     <div className="min-h-screen paper-texture text-ink">
       <Navbar />
 
-      <main className="max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 pt-28 sm:pt-32 pb-24">
+      <main className="max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 pt-28 sm:pt-32 pb-32 sm:pb-24">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}

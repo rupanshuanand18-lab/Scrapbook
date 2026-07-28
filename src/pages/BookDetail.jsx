@@ -114,7 +114,7 @@ export default function BookDetail() {
         </div>
       </section>
 
-      <main className="max-w-4xl mx-auto px-5 sm:px-8 py-16 grid md:grid-cols-12 gap-10 items-start">
+      <main className="max-w-4xl mx-auto px-5 sm:px-8 py-16 pb-32 md:pb-24 grid md:grid-cols-12 gap-10 items-start">
 
         <div className="md:col-span-4 space-y-7">
           <div className="scrapbook-card rounded-2xl p-6 border border-beige/40 space-y-4 font-sans" style={{ rotate: '-0.3deg' }}>
