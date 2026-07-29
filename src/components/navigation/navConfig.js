@@ -25,13 +25,6 @@ export const desktopNavItems = [
     match: (pathname) => pathname === '/community',
   },
   {
-    key: 'explore',
-    label: 'Explore',
-    to: '/community?tab=Discover',
-    icon: Search,
-    match: (pathname, search) => pathname === '/community' && new URLSearchParams(search).get('tab') === 'Discover',
-  },
-  {
     key: 'capture',
     label: 'Capture',
     to: '/capture',

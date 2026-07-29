@@ -178,7 +178,7 @@ export default function ImageCanvas({
           onClose={() => setEditorOpen(false)}
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
-          aspectRatio="1:1"
+          defaultCropMode="free"
         />
       </div>
     )
@@ -247,7 +247,7 @@ export default function ImageCanvas({
           onClose={() => setEditorOpen(false)}
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
-          aspectRatio="16:9" // ideal aspect ratio for banner cover
+          defaultCropMode="free"
         />
       </div>
     )
@@ -301,7 +301,7 @@ export default function ImageCanvas({
           onClose={() => setEditorOpen(false)}
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
-          aspectRatio={aspect === '3/4' ? '4:5' : '16:9'}
+          defaultCropMode="free"
         />
       </div>
     )
@@ -362,7 +362,7 @@ export default function ImageCanvas({
           onClose={() => setEditorOpen(false)}
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
-          aspectRatio={aspect === '3/4' ? '4:5' : '16:9'}
+          defaultCropMode="free"
         />
       </div>
     )
@@ -445,7 +445,7 @@ export default function ImageCanvas({
         onClose={() => setEditorOpen(false)}
         initialFiles={editingFiles}
         onSaveComplete={handleSaveComplete}
-        aspectRatio={aspect === '3/4' ? '4:5' : '16:9'}
+        defaultCropMode="free"
         multiple
       />
     </div>

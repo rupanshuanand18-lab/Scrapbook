@@ -24,7 +24,7 @@ export default function Community() {
     let mappedUsername = username
     if (username === 'priyawrites') mappedUsername = 'priyasharma'
     if (username === 'rahulnotes') mappedUsername = 'rahulkapoor'
-    
+
     const matchedUser = allUsers.find(
       (u) => u.username.toLowerCase() === mappedUsername.toLowerCase()
     )
@@ -395,34 +395,6 @@ export default function Community() {
                   />
                 )}
                 <span className="relative z-10">{tab}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* CATEGORY FILTERS */}
-          <div className="flex gap-3 flex-wrap mb-14">
-            {categories.map((category) => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => setActiveCategory(category)}
-                className={`
-                  px-6
-                  py-3
-                  rounded-full
-                  border
-                  text-sm
-                  font-medium
-                  transition-all
-                  duration-300
-                  cursor-pointer
-                  ${activeCategory === category
-                    ? 'bg-pink-accent text-white border-pink-accent shadow-md'
-                    : 'bg-paper text-ink border-beige hover:border-pink-accent hover:text-pink-accent'
-                  }
-                `}
-              >
-                {category}
               </button>
             ))}
           </div>
@@ -817,7 +789,9 @@ export default function Community() {
 
             {/* RIGHT SIDEBAR */}
             <aside className="hidden lg:block sticky top-28 space-y-6">
-              <section className="rounded-3xl border border-beige bg-paper p-6 shadow-[0_12px_40px_rgba(44,40,37,0.05)]">
+
+              <section className="relative rounded-3xl border border-beige bg-paper p-6 shadow-[0_12px_40px_rgba(44,40,37,0.05)]">
+                <div className="absolute top-4 -right-6 -translate-x-0 w-24 h-6 washi-tape-accent z-20 pointer-events-none rotate-[45deg] opacity-85" />
                 <h3 className="font-display text-2xl text-ink">
                   Trending Categories
                 </h3>
@@ -838,7 +812,8 @@ export default function Community() {
                 </div>
               </section>
 
-              <section className="rounded-3xl border border-beige bg-paper p-6 shadow-[0_12px_40px_rgba(44,40,37,0.05)]">
+              <section className="relative rounded-3xl border border-beige bg-paper p-6 shadow-[0_12px_40px_rgba(44,40,37,0.05)]">
+                <div className="absolute top-4 -right-6 -translate-x-0 w-24 h-6 washi-tape-accent z-20 pointer-events-none rotate-[45deg] opacity-85" />
                 <h3 className="font-display text-2xl text-ink">
                   Suggested Creators
                 </h3>

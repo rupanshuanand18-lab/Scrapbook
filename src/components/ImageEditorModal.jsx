@@ -1,1075 +1,991 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Undo,
-  Redo,
-  RotateCw,
-  RotateCcw,
-  RefreshCw,
   Check,
-  X,
+  ChevronLeft,
+  Frame,
+  Grid3x3,
+  Image as ImageIcon,
   Plus,
+  RefreshCw,
+  RotateCw,
   Trash2,
+  X,
   ZoomIn,
-  ZoomOut,
-  Eye
 } from 'lucide-react'
+import Button from './ui/Button'
 
-// Default aspect ratio presets
-const ASPECT_PRESETS = [
-  { id: 'free', label: 'Free' },
-  { id: 'original', label: 'Original' },
-  { id: '1:1', label: 'Square (1:1)', value: 1 },
-  { id: '4:5', label: 'Portrait (4:5)', value: 0.8 },
-  { id: '9:16', label: 'Story (9:16)', value: 9 / 16 },
-  { id: '16:9', label: 'Landscape (16:9)', value: 16 / 9 }
+/* ═══════════════════════════════════════════════
+   CONSTANTS
+   ═══════════════════════════════════════════════ */
+const ASPECT_RATIOS = [
+  { id: 'original', label: 'Original', ratio: null, icon: ImageIcon },
+  { id: '1:1', label: '1:1', ratio: 1, icon: Frame },
+  { id: '4:5', label: '4:5', ratio: 4 / 5, icon: Frame },
+  { id: '16:9', label: '16:9', ratio: 16 / 9, icon: Frame },
+  { id: '9:16', label: '9:16', ratio: 9 / 16, icon: Frame },
 ]
 
+const MIN_ZOOM = 1
+const MAX_ZOOM = 4
+const OUTPUT_SIZE = 1200
+
+/* ═══════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════ */
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v))
+const wait = (ms) => new Promise((r) => window.setTimeout(r, ms))
+
+const createImageRecord = (fileOrUrl) => {
+  let src = ''
+  let name = 'image.jpg'
+  let file = null
+  if (typeof fileOrUrl === 'string') {
+    src = fileOrUrl
+  } else if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
+    src = URL.createObjectURL(fileOrUrl)
+    name = fileOrUrl.name || name
+    file = fileOrUrl
+  }
+  return {
+    id: Math.random().toString(36).slice(2, 11),
+    src,
+    name,
+    file,
+    naturalW: 0,
+    naturalH: 0,
+    naturalRatio: 1,
+    zoom: 1,
+    rotate: 0,
+    panX: 0,
+    panY: 0,
+    aspectId: 'original',
+  }
+}
+
+const loadImageAsset = (src, timeoutMs = 10000) =>
+  new Promise((resolve) => {
+    let settled = false
+    const img = new Image()
+    const finish = (payload) => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timerId)
+      resolve(payload)
+    }
+    const timerId = window.setTimeout(() => finish({ ok: false, timedOut: true, img: null }), timeoutMs)
+    img.onload = () => finish({ ok: true, img })
+    img.onerror = () => finish({ ok: false, error: true, img: null })
+    img.decoding = 'async'
+    img.crossOrigin = 'anonymous'
+    img.src = src
+    if (img.complete && img.naturalWidth > 0) finish({ ok: true, img })
+  })
+
+/* ═══════════════════════════════════════════════
+   COMPONENT
+   ═══════════════════════════════════════════════ */
 export default function ImageEditorModal({
   isOpen,
   onClose,
-  initialFiles = [], // Array of File objects or URL strings
-  onSaveComplete, // Callback receiving array of compressed image dataUrls
-  aspectRatio = 'free'
+  initialFiles = [],
+  onSaveComplete,
+  defaultCropMode = 'original',
 }) {
-  // Image list state (single source of truth for all edit states)
-  const [images, setImages] = useState(() => {
-    if (!initialFiles || initialFiles.length === 0) return []
-    return initialFiles.map((fileOrUrl) => {
-      let src = ''
-      let name = 'image.jpg'
-      let fileObj = null
-
-      if (typeof fileOrUrl === 'string') {
-        src = fileOrUrl
-      } else if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
-        src = URL.createObjectURL(fileOrUrl)
-        name = fileOrUrl.name
-        fileObj = fileOrUrl
-      }
-
-      return {
-        id: Math.random().toString(36).substr(2, 9),
-        src,
-        name,
-        file: fileObj,
-        zoom: 1,
-        rotate: 0,
-        pan: { x: 0, y: 0 },
-        aspect: aspectRatio,
-        cropW: 300,
-        cropH: 300,
-        naturalRatio: 1
-      }
-    })
-  })
-
+  /* ── State ─────────────────────────────────── */
+  const [images, setImages] = useState([])
   const [activeIndex, setActiveIndex] = useState(0)
-
-  // Current active image edit states (local variables for 60fps rendering during drags/gestures)
-  const [zoom, setZoom] = useState(1)
-  const [rotate, setRotate] = useState(0)
-  const [pan, setPan] = useState({ x: 0, y: 0 })
-  const [activeAspect, setActiveAspect] = useState(aspectRatio)
-  const [cropW, setCropW] = useState(300)
-  const [cropH, setCropH] = useState(300)
-
-  // Interaction states
-  const [isDraggingImage, setIsDraggingImage] = useState(false)
-  const [isResizingCrop, setIsResizingCrop] = useState(false)
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [showGrid, setShowGrid] = useState(false)
-  const gridTimeoutRef = useRef(null)
-
-  // Undo / Redo history stacks
-  const [history, setHistory] = useState(() => {
-    if (!initialFiles || initialFiles.length === 0) return []
-    return [
-      {
-        zoom: 1,
-        rotate: 0,
-        pan: { x: 0, y: 0 },
-        cropW: 300,
-        cropH: 300,
-        aspect: aspectRatio
-      }
-    ]
-  })
-  const [historyIndex, setHistoryIndex] = useState(0)
-
-  // Sub-modal overlays
-  const [showSavePreview, setShowSavePreview] = useState(false)
-  const [savePreviews, setSavePreviews] = useState([])
-  const [processingState, setProcessingState] = useState(null) // 'compressing' | 'uploading' | 'success' | null
+  const [activeTool, setActiveTool] = useState(null) // 'ratio' | 'zoom'
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [processingStep, setProcessingStep] = useState(null) // 'render' | 'save' | 'done'
   const [progress, setProgress] = useState(0)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [error, setError] = useState('')
+  const [showPreview, setShowPreview] = useState(false)
+  const [previewUrls, setPreviewUrls] = useState([])
+  const [isImageLoading, setIsImageLoading] = useState(false)
 
-  // Refs
+  /* ── Refs ──────────────────────────────────── */
+  const mountRef = useRef(false)
   const viewportRef = useRef(null)
-  const containerRef = useRef(null)
+  const imageRef = useRef(null)
   const fileInputRef = useRef(null)
-  const pinchStartDistRef = useRef(null)
-  const pinchStartZoomRef = useRef(null)
+  const gestureRef = useRef({
+    active: false,
+    type: null, // 'pan' | 'pinch'
+    startX: 0,
+    startY: 0,
+    initialPanX: 0,
+    initialPanY: 0,
+    initialZoom: 1,
+    pinchStartDist: 0,
+    pinchStartZoom: 1,
+  })
+  const objectUrlsRef = useRef([])
+  const errorTimerRef = useRef(null)
+  const rafRef = useRef(null)
 
-  // Get active image edit state (source of truth)
   const activeImage = images[activeIndex] || null
 
-  const changeActiveImage = (index, currentImages = images) => {
-    setActiveIndex(index)
-    const img = currentImages[index]
-    if (img) {
-      setZoom(img.zoom || 1)
-      setRotate(img.rotate || 0)
-      setPan(img.pan || { x: 0, y: 0 })
-      setActiveAspect(img.aspect || aspectRatio)
-      setCropW(img.cropW || 300)
-      setCropH(img.cropH || 300)
+  /* ── Derived: current aspect ratio object ────── */
+  const currentAspect = useMemo(() => {
+    if (!activeImage) return ASPECT_RATIOS[0]
+    return ASPECT_RATIOS.find((a) => a.id === activeImage.aspectId) || ASPECT_RATIOS[0]
+  }, [activeImage])
 
-      setHistory([
-        {
-          zoom: img.zoom || 1,
-          rotate: img.rotate || 0,
-          pan: img.pan ? { ...img.pan } : { x: 0, y: 0 },
-          cropW: img.cropW || 300,
-          cropH: img.cropH || 300,
-          aspect: img.aspect || aspectRatio
-        }
-      ])
-      setHistoryIndex(0)
-    }
-  }
+  /* ── Error helper ──────────────────────────── */
+  const showError = useCallback((msg) => {
+    setError(msg)
+    if (errorTimerRef.current) window.clearTimeout(errorTimerRef.current)
+    errorTimerRef.current = window.setTimeout(() => mountRef.current && setError(''), 4000)
+  }, [])
 
-  // Update current active image state in list and schedule history commit
-  const updateActiveImageState = (updates, commit = false) => {
-    setImages((prev) =>
-      prev.map((img, i) => (i === activeIndex ? { ...img, ...updates } : img))
-    )
-
-    if (commit && activeImage) {
-      const stateSnapshot = {
-        zoom: updates.zoom !== undefined ? updates.zoom : zoom,
-        rotate: updates.rotate !== undefined ? updates.rotate : rotate,
-        pan: updates.pan !== undefined ? updates.pan : { ...pan },
-        cropW: updates.cropW !== undefined ? updates.cropW : cropW,
-        cropH: updates.cropH !== undefined ? updates.cropH : cropH,
-        aspect: updates.aspect !== undefined ? updates.aspect : activeAspect
+  /* ── Frame size calculator ─────────────────── */
+  const getFrameSize = useCallback(
+    (maxW, maxH) => {
+      const ratio = currentAspect.ratio || activeImage?.naturalRatio || 1
+      let w = maxW
+      let h = w / ratio
+      if (h > maxH) {
+        h = maxH
+        w = h * ratio
       }
+      return { w: Math.round(w), h: Math.round(h) }
+    },
+    [currentAspect, activeImage]
+  )
 
-      // Truncate forward history
-      const newHistory = history.slice(0, historyIndex + 1)
-      setHistory([...newHistory, stateSnapshot])
-      setHistoryIndex(newHistory.length)
-    }
-  }
+  /* ── Pan bounds calculator ───────────────────── */
+  const getPanBounds = useCallback(
+    (frameW, frameH, zoom, rotate) => {
+      if (!activeImage || !activeImage.naturalW) return { minX: 0, maxX: 0, minY: 0, maxY: 0 }
+      // Effective dimensions after rotation (swap if 90° or 270°)
+      const isSwapped = Math.abs(rotate % 180) === 90
+      const imgW = isSwapped ? activeImage.naturalH : activeImage.naturalW
+      const imgH = isSwapped ? activeImage.naturalW : activeImage.naturalH
 
-  // Adjust crop aspect ratio box inside viewport (Excluded activeImage to avoid layout thrashing during gestures)
+      // Base scale to cover frame
+      const baseScale = Math.max(frameW / imgW, frameH / imgH)
+      const totalScale = baseScale * zoom
+      const displayW = imgW * totalScale
+      const displayH = imgH * totalScale
+
+      const minX = frameW / 2 - displayW / 2
+      const maxX = displayW / 2 - frameW / 2
+      const minY = frameH / 2 - displayH / 2
+      const maxY = displayH / 2 - frameH / 2
+
+      return { minX, maxX, minY, maxY }
+    },
+    [activeImage]
+  )
+
+  /* ── Clamp pan to bounds ─────────────────────── */
+  const clampPan = useCallback(
+    (px, py, zoom, rotate) => {
+      if (!viewportRef.current || !activeImage) return { x: px, y: py }
+      const rect = viewportRef.current.getBoundingClientRect()
+      const { w: frameW, h: frameH } = getFrameSize(rect.width - 32, rect.height - 32)
+      const { minX, maxX, minY, maxY } = getPanBounds(frameW, frameH, zoom, rotate)
+      return { x: clamp(px, minX, maxX), y: clamp(py, minY, maxY) }
+    },
+    [activeImage, getFrameSize, getPanBounds]
+  )
+
+  /* ── Commit helpers ──────────────────────────── */
+  const commitToActive = useCallback(
+    (updates) => {
+      setImages((prev) => prev.map((img, i) => (i === activeIndex ? { ...img, ...updates } : img)))
+    },
+    [activeIndex]
+  )
+
+  /* ── Effects ───────────────────────────────── */
+
   useEffect(() => {
-    if (!viewportRef.current || !activeImage) return
-
-    const rect = viewportRef.current.getBoundingClientRect()
-    const maxW = rect.width - 48
-    const maxH = rect.height - 48
-
-    const setCropDimensions = (w, h) => {
-      const roundedW = Math.round(w)
-      const roundedH = Math.round(h)
-      setCropW(roundedW)
-      setCropH(roundedH)
-      setImages((prev) =>
-        prev.map((img, i) =>
-          i === activeIndex
-            ? { ...img, cropW: roundedW, cropH: roundedH }
-            : img
-        )
-      )
+    mountRef.current = true
+    return () => {
+      mountRef.current = false
+      document.body.style.overflow = ''
+      if (errorTimerRef.current) window.clearTimeout(errorTimerRef.current)
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+      objectUrlsRef.current = []
     }
+  }, [])
 
-    if (activeAspect === 'free') {
-      const currentW = Math.min(activeImage.cropW || 300, maxW)
-      const currentH = Math.min(activeImage.cropH || 300, maxH)
-      if (currentW !== cropW || currentH !== cropH) {
-        setCropDimensions(currentW, currentH)
-      }
-    } else if (activeAspect === 'original') {
-      const img = new Image()
-      img.src = activeImage.src
-      img.onload = () => {
-        const ratio = img.naturalWidth / img.naturalHeight
-        let w = maxW
-        let h = w / ratio
-        if (h > maxH) {
-          h = maxH
-          w = h * ratio
-        }
-        if (Math.round(w) !== cropW || Math.round(h) !== cropH) {
-          setCropDimensions(w, h)
-        }
-      }
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+      setError('')
+      setActiveTool(null)
+      setShowPreview(false)
+      setIsProcessing(false)
     } else {
-      const preset = ASPECT_PRESETS.find((p) => p.id === activeAspect)
-      if (preset && preset.value) {
-        const ratio = preset.value
-        let w = maxW
-        let h = w / ratio
-        if (h > maxH) {
-          h = maxH
-          w = h * ratio
-        }
-        if (Math.round(w) !== cropW || Math.round(h) !== cropH) {
-          setCropDimensions(w, h)
-        }
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    if (!initialFiles || initialFiles.length === 0) {
+      setImages([])
+      setActiveIndex(0)
+      return
+    }
+    const next = initialFiles.map((f) => createImageRecord(f))
+    // Apply defaultCropMode as aspect if valid
+    const validAspect = ASPECT_RATIOS.find((a) => a.id === defaultCropMode)
+    if (validAspect) {
+      next.forEach((img) => (img.aspectId = defaultCropMode))
+    }
+    setImages(next)
+    setActiveIndex(0)
+    setIsImageLoading(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialFiles, defaultCropMode])
+
+  /* ── Keyboard shortcuts ────────────────────── */
+  useEffect(() => {
+    if (!isOpen) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        if (showPreview) { setShowPreview(false); return }
+        if (activeTool) { setActiveTool(null); return }
+        onClose()
+        return
+      }
+      if (!activeImage) return
+      if (e.key === 'r' || e.key === 'R') {
+        if (e.metaKey || e.ctrlKey) return
+        e.preventDefault()
+        handleRotate()
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeIndex, activeAspect, activeImage?.src, aspectRatio])
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isOpen, activeImage, activeTool, showPreview, onClose])
 
-  // Flash grid helper
-  const triggerGridAnimation = () => {
-    setShowGrid(true)
-    if (gridTimeoutRef.current) clearTimeout(gridTimeoutRef.current)
-    gridTimeoutRef.current = setTimeout(() => {
-      setShowGrid(false)
-    }, 1200)
-  }
-
-  // History operations
-  const handleUndo = () => {
-    if (historyIndex > 0) {
-      const prevIdx = historyIndex - 1
-      const state = history[prevIdx]
-      setHistoryIndex(prevIdx)
-      setZoom(state.zoom)
-      setRotate(state.rotate)
-      setPan(state.pan)
-      setCropW(state.cropW)
-      setCropH(state.cropH)
-      setActiveAspect(state.aspect)
-      setImages((prev) =>
-        prev.map((img, i) => (i === activeIndex ? { ...img, ...state } : img))
-      )
-    }
-  }
-
-  const handleRedo = () => {
-    if (historyIndex < history.length - 1) {
-      const nextIdx = historyIndex + 1
-      const state = history[nextIdx]
-      setHistoryIndex(nextIdx)
-      setZoom(state.zoom)
-      setRotate(state.rotate)
-      setPan(state.pan)
-      setCropW(state.cropW)
-      setCropH(state.cropH)
-      setActiveAspect(state.aspect)
-      setImages((prev) =>
-        prev.map((img, i) => (i === activeIndex ? { ...img, ...state } : img))
-      )
-    }
-  }
-
-  const handleReset = () => {
-    const defaultState = {
-      zoom: 1,
-      rotate: 0,
-      pan: { x: 0, y: 0 }
-    }
-    setZoom(1)
-    setRotate(0)
-    setPan({ x: 0, y: 0 })
-    updateActiveImageState(defaultState, true)
-    triggerGridAnimation()
-  }
+  /* ── Handlers ──────────────────────────────── */
 
   const handleImageLoad = (e) => {
     const { naturalWidth, naturalHeight } = e.target
+    if (!naturalWidth || !naturalHeight) return
     const ratio = naturalWidth / naturalHeight
     setImages((prev) =>
-      prev.map((img, i) => (i === activeIndex ? { ...img, naturalRatio: ratio } : img))
+      prev.map((img, i) =>
+        i === activeIndex
+          ? { ...img, naturalW: naturalWidth, naturalH: naturalHeight, naturalRatio: ratio }
+          : img
+      )
     )
+    setIsImageLoading(false)
   }
 
-  // Rotate functions
-  const handleRotateLeft = () => {
-    const nextRotate = (rotate - 90) % 360
-    setRotate(nextRotate)
-    updateActiveImageState({ rotate: nextRotate }, true)
-    triggerGridAnimation()
+  const handleRotate = () => {
+    if (!activeImage) return
+    const nextRotate = (activeImage.rotate + 90) % 360
+    // Re-clamp pan after rotation
+    const nextPan = clampPan(activeImage.panX, activeImage.panY, activeImage.zoom, nextRotate)
+    commitToActive({ rotate: nextRotate, panX: nextPan.x, panY: nextPan.y })
+    setShowGrid(true)
+    window.setTimeout(() => mountRef.current && setShowGrid(false), 900)
   }
 
-  const handleRotateRight = () => {
-    const nextRotate = (rotate + 90) % 360
-    setRotate(nextRotate)
-    updateActiveImageState({ rotate: nextRotate }, true)
-    triggerGridAnimation()
+  const handleSetAspect = (aspectId) => {
+    if (!activeImage) return
+    commitToActive({ aspectId })
+    // Re-clamp pan for new aspect
+    requestAnimationFrame(() => {
+      const nextPan = clampPan(activeImage.panX, activeImage.panY, activeImage.zoom, activeImage.rotate)
+      commitToActive({ panX: nextPan.x, panY: nextPan.y })
+    })
+    setShowGrid(true)
+    window.setTimeout(() => mountRef.current && setShowGrid(false), 900)
   }
 
-  // Drag and drop filmstrip handlers (Reordering)
-  const [draggedFilmIndex, setDraggedFilmIndex] = useState(null)
-
-  const handleFilmstripDragStart = (e, index) => {
-    setDraggedFilmIndex(index)
+  const handleZoomChange = (nextZoom) => {
+    if (!activeImage) return
+    const clamped = clamp(nextZoom, MIN_ZOOM, MAX_ZOOM)
+    const nextPan = clampPan(activeImage.panX, activeImage.panY, clamped, activeImage.rotate)
+    commitToActive({ zoom: clamped, panX: nextPan.x, panY: nextPan.y })
   }
 
-  const handleFilmstripDragOver = (e) => {
-    e.preventDefault()
+  const handleReset = () => {
+    if (!activeImage) return
+    const nextPan = clampPan(0, 0, 1, activeImage.rotate)
+    commitToActive({ zoom: 1, panX: nextPan.x, panY: nextPan.y })
+    setShowGrid(true)
+    window.setTimeout(() => mountRef.current && setShowGrid(false), 900)
   }
 
-  const handleFilmstripDrop = (e, index) => {
-    e.preventDefault()
-    if (draggedFilmIndex === null || draggedFilmIndex === index) return
-
-    const reordered = [...images]
-    const [draggedItem] = reordered.splice(draggedFilmIndex, 1)
-    reordered.splice(index, 0, draggedItem)
-
-    setImages(reordered)
-    // Adjust active index
-    let nextActiveIdx = index
-    if (activeIndex === draggedFilmIndex) {
-      nextActiveIdx = index
-    } else if (activeIndex > draggedFilmIndex && activeIndex <= index) {
-      nextActiveIdx = activeIndex - 1
-    } else if (activeIndex < draggedFilmIndex && activeIndex >= index) {
-      nextActiveIdx = activeIndex + 1
-    }
-    changeActiveImage(nextActiveIdx, reordered)
-    setDraggedFilmIndex(null)
-  }
-
-  // File picker handler inside the editor
-  const handleAddPhotos = (e) => {
-    const files = Array.from(e.target.files)
-    const validTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/webp']
-    const added = []
-
-    for (let f of files) {
-      if (!validTypes.includes(f.type)) {
-        setErrorMessage(`Unsupported format: "${f.name}". Use JPG, PNG or WEBP.`)
-        continue
-      }
-      if (f.size > 20 * 1024 * 1024) {
-        setErrorMessage(`File too large: "${f.name}". Max size is 20MB.`)
-        continue
-      }
-      added.push({
-        id: Math.random().toString(36).substr(2, 9),
-        src: URL.createObjectURL(f),
-        name: f.name,
-        file: f,
-        zoom: 1,
-        rotate: 0,
-        pan: { x: 0, y: 0 },
-        aspect: 'free',
-        cropW: 300,
-        cropH: 300,
-        naturalRatio: 1
-      })
-    }
-
-    if (added.length > 0) {
-      const nextImages = [...images, ...added]
-      const nextActiveIdx = images.length
-      setImages(nextImages)
-      changeActiveImage(nextActiveIdx, nextImages)
-    }
-  }
-
-  const handleRemovePhoto = (index, e) => {
-    e.stopPropagation()
-    const filtered = images.filter((_, i) => i !== index)
-    if (filtered.length === 0) {
-      onClose()
-      return
-    }
-    const nextActiveIdx = Math.max(0, Math.min(activeIndex, filtered.length - 1))
-    setImages(filtered)
-    changeActiveImage(nextActiveIdx, filtered)
-  }
-
-  // Pointer interactions (Pan and Zoom)
-  const getPointerPos = (e) => {
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY
-    return { x: clientX, y: clientY }
-  }
+  /* ── Pointer Gestures ──────────────────────── */
 
   const handlePointerDown = (e) => {
-    if (e.target.closest('.crop-resize-handle')) {
-      setIsResizingCrop(true)
-      const touch = e.touches ? e.touches[0] : e
-      setDragStart({ x: touch.clientX, y: touch.clientY })
-      return
-    }
-
-    setIsDraggingImage(true)
-    const pos = getPointerPos(e)
-    setDragStart({ x: pos.x - pan.x, y: pos.y - pan.y })
+    if (!activeImage) return
+    const g = gestureRef.current
+    g.active = true
+    g.type = 'pan'
+    g.startX = e.clientX
+    g.startY = e.clientY
+    g.initialPanX = activeImage.panX
+    g.initialPanY = activeImage.panY
+    g.initialZoom = activeImage.zoom
+    try { e.target.setPointerCapture(e.pointerId) } catch (_) { }
     setShowGrid(true)
   }
 
   const handlePointerMove = (e) => {
-    if (isResizingCrop) {
-      e.preventDefault()
-      const touch = e.touches ? e.touches[0] : e
-      const viewportRect = viewportRef.current.getBoundingClientRect()
-      const centerX = viewportRect.left + viewportRect.width / 2
-      const centerY = viewportRect.top + viewportRect.height / 2
-      
-      const newHalfW = Math.abs(touch.clientX - centerX)
-      const newHalfH = Math.abs(touch.clientY - centerY)
-      
-      const maxW = viewportRect.width - 48
-      const maxH = viewportRect.height - 48
-
-      let nextW = Math.max(80, Math.min(maxW, newHalfW * 2))
-      let nextH = Math.max(80, Math.min(maxH, newHalfH * 2))
-
-      // Keep aspect ratio constraint if not free
-      if (activeAspect !== 'free') {
-        let ratio;
-        if (activeAspect === 'original') {
-          ratio = activeImage?.naturalRatio || 1
-        } else {
-          ratio = ASPECT_PRESETS.find((p) => p.id === activeAspect)?.value || 1
-        }
-        
-        // Match height to width ratio
-        nextH = nextW / ratio
-        if (nextH > maxH) {
-          nextH = maxH
-          nextW = nextH * ratio
-        }
-      }
-
-      setCropW(Math.round(nextW))
-      setCropH(Math.round(nextH))
-      return
-    }
-
-    if (!isDraggingImage) return
-
-    const pos = getPointerPos(e)
-    const nextPan = {
-      x: pos.x - dragStart.x,
-      y: pos.y - dragStart.y
-    }
-    setPan(nextPan)
-    triggerGridAnimation()
-  }
-
-  const handlePointerUp = () => {
-    if (isDraggingImage || isResizingCrop) {
-      setIsDraggingImage(false)
-      setIsResizingCrop(false)
-      setShowGrid(false)
-      updateActiveImageState({ pan, zoom, rotate, cropW, cropH }, true)
-    }
-  }
-
-  // Wheel Zoom
-  const handleWheel = (e) => {
+    const g = gestureRef.current
+    if (!g.active || g.type !== 'pan') return
     e.preventDefault()
-    const zoomFactor = e.deltaY < 0 ? 1.05 : 0.95
-    const nextZoom = Math.max(0.8, Math.min(8, zoom * zoomFactor))
-    setZoom(nextZoom)
-    triggerGridAnimation()
-    
-    if (gridTimeoutRef.current) clearTimeout(gridTimeoutRef.current)
-    gridTimeoutRef.current = setTimeout(() => {
-      updateActiveImageState({ zoom: nextZoom }, true)
-      setShowGrid(false)
-    }, 400)
+    const dx = e.clientX - g.startX
+    const dy = e.clientY - g.startY
+    const rawX = g.initialPanX + dx
+    const rawY = g.initialPanY + dy
+    const clamped = clampPan(rawX, rawY, g.initialZoom, activeImage.rotate)
+    if (imageRef.current) {
+      imageRef.current.style.transform = buildTransform(clamped.x, clamped.y, g.initialZoom, activeImage.rotate)
+    }
   }
 
-  // Touch Pinch and Double Tap
+  const handlePointerUp = (e) => {
+    const g = gestureRef.current
+    if (!g.active) return
+    g.active = false
+    try { e.target.releasePointerCapture(e.pointerId) } catch (_) { }
+    // Read final transform from DOM
+    const transform = imageRef.current?.style.transform || ''
+    const tMatch = transform.match(/translate\\(([^p]+)px,\\s*([^p]+)px\\)/)
+    const sMatch = transform.match(/scale\\(([^)]+)\\)/)
+    const finalPan = {
+      x: tMatch ? parseFloat(tMatch[1]) : activeImage.panX,
+      y: tMatch ? parseFloat(tMatch[2]) : activeImage.panY,
+    }
+    const finalZoom = sMatch ? parseFloat(sMatch[1]) : activeImage.zoom
+    const clamped = clampPan(finalPan.x, finalPan.y, finalZoom, activeImage.rotate)
+    commitToActive({ panX: clamped.x, panY: clamped.y })
+    setShowGrid(false)
+  }
+
+  /* ── Touch Pinch ───────────────────────────── */
   const handleTouchStart = (e) => {
-    if (e.touches.length === 2) {
+    if (e.touches.length === 2 && activeImage) {
       e.preventDefault()
-      const touch1 = e.touches[0]
-      const touch2 = e.touches[1]
-      const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY)
-      pinchStartDistRef.current = dist
-      pinchStartZoomRef.current = zoom
-      setIsDraggingImage(false)
-    } else {
-      handlePointerDown(e)
+      const g = gestureRef.current
+      g.type = 'pinch'
+      const [t1, t2] = e.touches
+      g.pinchStartDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY)
+      g.pinchStartZoom = activeImage.zoom
     }
   }
 
   const handleTouchMove = (e) => {
-    if (e.touches.length === 2 && pinchStartDistRef.current !== null) {
+    const g = gestureRef.current
+    if (e.touches.length === 2 && g.type === 'pinch' && activeImage) {
       e.preventDefault()
-      const touch1 = e.touches[0]
-      const touch2 = e.touches[1]
-      const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY)
-      const scale = dist / pinchStartDistRef.current
-      const nextZoom = Math.max(0.8, Math.min(8, pinchStartZoomRef.current * scale))
-      setZoom(nextZoom)
-      triggerGridAnimation()
-    } else {
-      handlePointerMove(e)
-    }
-  }
-
-  const handleTouchEnd = (e) => {
-    if (e.touches.length < 2) {
-      pinchStartDistRef.current = null
-      pinchStartZoomRef.current = null
-    }
-    handlePointerUp()
-  }
-
-  const lastTapRef = useRef(0)
-  const handleDoubleTap = () => {
-    const now = Date.now()
-    if (now - lastTapRef.current < 300) {
-      const nextZoom = zoom > 1.5 ? 1 : 2.5
-      setZoom(nextZoom)
-      setPan({ x: 0, y: 0 })
-      updateActiveImageState({ zoom: nextZoom, pan: { x: 0, y: 0 } }, true)
-      triggerGridAnimation()
-    }
-    lastTapRef.current = now
-  }
-
-  // Render crop preview overlay inside canvas (Applying cache-buster query parameter to bypass CORS issues)
-  const generatePreviewData = () => {
-    return new Promise((resolve) => {
-      const renderedPreviews = []
-      let loadedCount = 0
-
-      images.forEach((imgObj) => {
-        const img = new Image()
-        // Cache-buster query param forces browser to perform standard cross-origin check bypass
-        img.src = imgObj.src.startsWith('http')
-          ? `${imgObj.src}${imgObj.src.includes('?') ? '&' : '?'}cors=${Date.now()}`
-          : imgObj.src
-        img.crossOrigin = 'anonymous'
-        img.onload = () => {
-          const canvas = document.createElement('canvas')
-          const ctx = canvas.getContext('2d')
-          
-          const outputW = 1200
-          const outputH = outputW / (imgObj.cropW / imgObj.cropH)
-          
-          canvas.width = outputW
-          canvas.height = outputH
-          
-          ctx.fillStyle = '#fdf8f0'
-          ctx.fillRect(0, 0, outputW, outputH)
-
-          ctx.save()
-          ctx.translate(outputW / 2, outputH / 2)
-
-          const scaleRatio = outputW / imgObj.cropW
-          ctx.translate(imgObj.pan.x * scaleRatio, imgObj.pan.y * scaleRatio)
-          
-          ctx.rotate((imgObj.rotate * Math.PI) / 180)
-
-          const baseScale = Math.max(imgObj.cropW / img.naturalWidth, imgObj.cropH / img.naturalHeight)
-          const renderW = img.naturalWidth * baseScale
-          const renderH = img.naturalHeight * baseScale
-
-          const drawW = renderW * imgObj.zoom * scaleRatio
-          const drawH = renderH * imgObj.zoom * scaleRatio
-
-          ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH)
-          ctx.restore()
-
-          renderedPreviews.push({
-            id: imgObj.id,
-            name: imgObj.name,
-            originalFile: imgObj.file,
-            dataUrl: canvas.toDataURL('image/jpeg', 0.88),
-            canvasObj: canvas
-          })
-
-          loadedCount++
-          if (loadedCount === images.length) {
-            resolve(renderedPreviews)
-          }
-        }
-        img.onerror = () => {
-          loadedCount++
-          if (loadedCount === images.length) {
-            resolve(renderedPreviews)
-          }
-        }
+      const [t1, t2] = e.touches
+      const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY)
+      const scale = dist / (g.pinchStartDist || 1)
+      const nextZoom = clamp(g.pinchStartZoom * scale, MIN_ZOOM, MAX_ZOOM)
+      const nextPan = clampPan(activeImage.panX, activeImage.panY, nextZoom, activeImage.rotate)
+      if (imageRef.current) {
+        imageRef.current.style.transform = buildTransform(nextPan.x, nextPan.y, nextZoom, activeImage.rotate)
+      }
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      rafRef.current = requestAnimationFrame(() => {
+        commitToActive({ zoom: nextZoom, panX: nextPan.x, panY: nextPan.y })
       })
+      setShowGrid(true)
+    }
+  }
+
+  const handleTouchEnd = () => {
+    const g = gestureRef.current
+    if (g.type === 'pinch') {
+      g.type = null
+      g.active = false
+      setShowGrid(false)
+    }
+  }
+
+  /* ── Wheel Zoom ────────────────────────────── */
+  const handleWheel = (e) => {
+    e.preventDefault()
+    if (!activeImage) return
+    const factor = e.deltaY < 0 ? 1.06 : 0.94
+    const nextZoom = clamp(activeImage.zoom * factor, MIN_ZOOM, MAX_ZOOM)
+    const nextPan = clampPan(activeImage.panX, activeImage.panY, nextZoom, activeImage.rotate)
+    commitToActive({ zoom: nextZoom, panX: nextPan.x, panY: nextPan.y })
+    setShowGrid(true)
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    rafRef.current = requestAnimationFrame(() => {
+      setShowGrid(false)
     })
   }
 
-  const handleOpenPreview = async () => {
-    setProcessingState('compressing')
-    setProgress(20)
-    const previews = await generatePreviewData()
-    setSavePreviews(previews)
-    setProgress(100)
-    setTimeout(() => {
-      setProcessingState(null)
-      setShowSavePreview(true)
-    }, 400)
+  /* ── Build CSS transform string ────────────── */
+  const buildTransform = (px, py, zoom, rotate) => {
+    return `translate(${px}px, ${py}px) rotate(${rotate}deg) scale(${zoom})`
   }
 
-  // Simulated background upload flow
-  const handleConfirmUpload = async () => {
-    setProcessingState('uploading')
-    setProgress(0)
-
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          return 100
-        }
-        return prev + 10
-      })
-    }, 150)
-
-    await new Promise((resolve) => setTimeout(resolve, 1600))
-    setProcessingState('success')
-    
-    const processedResults = savePreviews.map((p) => p.dataUrl)
-
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setProcessingState(null)
-    setShowSavePreview(false)
-    onSaveComplete(processedResults)
-    onClose()
+  /* ── Filmstrip ─────────────────────────────── */
+  const handleFilmDragStart = (idx) => { /* native dnd */ }
+  const handleFilmDrop = (e, idx) => {
+    e.preventDefault()
+    const fromIdx = parseInt(e.dataTransfer.getData('text/plain'))
+    if (isNaN(fromIdx) || fromIdx === idx) return
+    const reordered = [...images]
+    const [moved] = reordered.splice(fromIdx, 1)
+    reordered.splice(idx, 0, moved)
+    setImages(reordered)
+    if (activeIndex === fromIdx) setActiveIndex(idx)
+    else if (activeIndex > fromIdx && activeIndex <= idx) setActiveIndex(activeIndex - 1)
+    else if (activeIndex < fromIdx && activeIndex >= idx) setActiveIndex(activeIndex + 1)
   }
 
+  const handleAddPhotos = (e) => {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ''
+    if (!files.length) return
+    const valid = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+    const added = []
+    const rejected = []
+    files.forEach((file) => {
+      if (!valid.includes(file.type)) { rejected.push(file.name); return }
+      if (file.size > 20 * 1024 * 1024) { rejected.push(file.name); return }
+      const url = URL.createObjectURL(file)
+      objectUrlsRef.current.push(url)
+      added.push({ ...createImageRecord(file), src: url })
+    })
+    if (rejected.length) showError(`Some files were rejected. Use JPG, PNG, or WEBP under 20MB.`)
+    if (!added.length) return
+    setImages((prev) => [...prev, ...added])
+    setActiveIndex(images.length)
+  }
+
+  const handleRemovePhoto = (idx) => {
+    const filtered = images.filter((_, i) => i !== idx)
+    if (!filtered.length) { onClose(); return }
+    const next = Math.max(0, Math.min(activeIndex, filtered.length - 1))
+    if (activeIndex === idx) setActiveIndex(next)
+    else if (activeIndex > idx) setActiveIndex(activeIndex - 1)
+    setImages(filtered)
+  }
+
+  /* ── Preview & Save ────────────────────────── */
+
+  const renderPreviewForImage = async (imgObj) => {
+    const loaded = await loadImageAsset(imgObj.src)
+    if (!loaded.ok || !loaded.img) {
+      return { id: imgObj.id, name: imgObj.name, dataUrl: imgObj.src, fallback: true }
+    }
+    const img = loaded.img
+    try {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('no ctx')
+
+      const aspect = ASPECT_RATIOS.find((a) => a.id === imgObj.aspectId)
+      const ratio = aspect?.ratio || imgObj.naturalRatio || 1
+      const outW = OUTPUT_SIZE
+      const outH = Math.round(outW / ratio)
+      canvas.width = outW
+      canvas.height = outH
+
+      ctx.fillStyle = '#fdf8f0'
+      ctx.fillRect(0, 0, outW, outH)
+      ctx.save()
+      ctx.translate(outW / 2, outH / 2)
+
+      // Frame size in source pixels
+      const isSwapped = Math.abs(imgObj.rotate % 180) === 90
+      const srcW = isSwapped ? imgObj.naturalH : imgObj.naturalW
+      const srcH = isSwapped ? imgObj.naturalW : imgObj.naturalH
+      const baseScale = Math.max(outW / srcW, outH / srcH)
+      const totalScale = baseScale * imgObj.zoom
+
+      // Pan in output coordinates
+      const panScale = outW / (outW / baseScale) // simplified: pan maps 1:1 relative to base
+      const effPanX = imgObj.panX * (outW / (srcW * baseScale * imgObj.zoom)) * totalScale
+      const effPanY = imgObj.panY * (outH / (srcH * baseScale * imgObj.zoom)) * totalScale
+
+      ctx.translate(imgObj.panX * (outW / (srcW * baseScale)), imgObj.panY * (outH / (srcH * baseScale)))
+      ctx.rotate((imgObj.rotate * Math.PI) / 180)
+
+      const drawW = imgObj.naturalW * totalScale
+      const drawH = imgObj.naturalH * totalScale
+      ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH)
+      ctx.restore()
+
+      let dataUrl = canvas.toDataURL('image/jpeg', 0.92)
+      return { id: imgObj.id, name: imgObj.name, dataUrl, fallback: false }
+    } catch (err) {
+      return { id: imgObj.id, name: imgObj.name, dataUrl: imgObj.src, fallback: true }
+    }
+  }
+
+  const handleNext = async () => {
+    if (!images.length) { showError('Add a photo first.'); return }
+    setIsProcessing(true)
+    setProcessingStep('render')
+    setProgress(10)
+    const iv = window.setInterval(() => setProgress((p) => (p >= 80 ? p : p + 10)), 200)
+    try {
+      const previews = await Promise.all(images.map((img) => renderPreviewForImage(img)))
+      window.clearInterval(iv)
+      if (!mountRef.current) return
+      setPreviewUrls(previews)
+      setProgress(100)
+      await wait(300)
+      if (!mountRef.current) return
+      setIsProcessing(false)
+      setProcessingStep(null)
+      setShowPreview(true)
+    } catch (err) {
+      window.clearInterval(iv)
+      if (mountRef.current) { showError('Preview failed. Try again.'); setIsProcessing(false) }
+    }
+  }
+
+  const handleConfirmSave = async () => {
+    if (!previewUrls.length) return
+    setIsProcessing(true)
+    setProcessingStep('save')
+    setProgress(15)
+    const iv = window.setInterval(() => setProgress((p) => (p >= 90 ? p : p + 12)), 150)
+    try {
+      await wait(800)
+      window.clearInterval(iv)
+      if (!mountRef.current) return
+      setProcessingStep('done')
+      setProgress(100)
+      await wait(600)
+      if (!mountRef.current) return
+      onSaveComplete(previewUrls.map((p) => p.dataUrl))
+      onClose()
+    } catch (err) {
+      window.clearInterval(iv)
+      if (mountRef.current) { showError('Save failed.'); setIsProcessing(false) }
+    }
+  }
+
+  /* ── Render guards ─────────────────────────── */
   if (!isOpen) return null
 
+  /* ── Compute frame size for render ─────────── */
+  let frameW = 300
+  let frameH = 300
+  if (viewportRef.current && activeImage) {
+    const rect = viewportRef.current.getBoundingClientRect()
+    const size = getFrameSize(rect.width - 32, rect.height - 32)
+    frameW = size.w
+    frameH = size.h
+  } else if (activeImage) {
+    const ratio = currentAspect.ratio || activeImage.naturalRatio || 1
+    frameW = 300
+    frameH = frameW / ratio
+  }
+
+  /* ── JSX ───────────────────────────────────── */
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Background Mask */}
+    <div className="fixed inset-0 z-[80] flex items-center justify-center">
+      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-ink/75 backdrop-blur-md"
+        className="absolute inset-0 bg-ink/55 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Editor Modal Window */}
+      {/* Modal */}
       <motion.div
-        initial={{ scale: 0.95, y: 30, opacity: 0 }}
-        animate={{ scale: 1, y: 0, opacity: 1 }}
-        exit={{ scale: 0.95, y: 30, opacity: 0 }}
-        transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-        className="relative w-full max-w-5xl h-[90vh] sm:h-[85vh] bg-[#1a1715] border border-beige/10 rounded-[32px] overflow-hidden flex flex-col shadow-2xl text-white font-sans"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.98 }}
+        transition={{ duration: 0.2 }}
+        className="relative flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden bg-paper shadow-2xl sm:h-[95dvh] sm:rounded-[24px]"
       >
-        {/* Error notification banner */}
+        {/* ═══════ Header ═══════ */}
+        <header className="flex shrink-0 items-center justify-between border-b border-beige/40 bg-paper px-4 py-3 sm:px-6">
+          <button
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-beige/30 hover:text-ink"
+            aria-label="Go back"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <h2 className="absolute left-1/2 -translate-x-1/2 font-display text-base font-semibold text-ink sm:text-lg">
+            Crop
+          </h2>
+          <button
+            onClick={handleNext}
+            disabled={!images.length || isProcessing}
+            className="text-sm font-semibold text-pink-accent transition-opacity hover:opacity-70 disabled:opacity-40 sm:text-base"
+          >
+            Next
+          </button>
+        </header>
+
+        {/* ═══════ Error Banner ═══════ */}
         <AnimatePresence>
-          {errorMessage && (
+          {error && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="bg-rose-900/80 border-b border-rose-500/30 text-rose-100 text-xs px-6 py-2.5 flex items-center justify-between"
+              className="flex items-center justify-between gap-3 border-b border-rose-200/60 bg-rose-50 px-4 py-2 text-xs text-rose-800"
             >
-              <span>{errorMessage}</span>
-              <button onClick={() => setErrorMessage('')} className="p-1 hover:bg-rose-800 rounded-full cursor-pointer">
-                <X className="w-3.5 h-3.5" />
-              </button>
+              <span>{error}</span>
+              <button onClick={() => setError('')} className="p-1"><X className="h-3 w-3" /></button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Top Header */}
-        <header className="px-6 py-4.5 border-b border-white/5 flex items-center justify-between bg-black/25">
-          <div className="flex items-center gap-3.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-pink-accent animate-pulse" />
-            <h2 className="font-display text-lg sm:text-xl font-bold tracking-wide italic text-cream">
-              Scrapbook Photo Lab
-            </h2>
-          </div>
-
-          {/* Top toolbar actions */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleUndo}
-              disabled={historyIndex <= 0}
-              className={`p-2 rounded-full cursor-pointer transition-colors ${
-                historyIndex > 0 ? 'text-white hover:bg-white/10' : 'text-white/20 cursor-not-allowed'
-              }`}
-              title="Undo"
-              aria-label="Undo edit"
-            >
-              <Undo className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleRedo}
-              disabled={historyIndex >= history.length - 1}
-              className={`p-2 rounded-full cursor-pointer transition-colors ${
-                historyIndex < history.length - 1 ? 'text-white hover:bg-white/10' : 'text-white/20 cursor-not-allowed'
-              }`}
-              title="Redo"
-              aria-label="Redo edit"
-            >
-              <Redo className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleReset}
-              className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full cursor-pointer transition-colors ml-1.5"
-              title="Reset Image"
-              aria-label="Reset modifications"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-            <div className="w-px h-5 bg-white/10 mx-2" />
-            <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/12 text-white/80 hover:text-white cursor-pointer transition-colors"
-              aria-label="Close editor"
-            >
-              ✕
-            </button>
-          </div>
-        </header>
-
-        {/* Workspace Body */}
-        <div className="flex-1 min-h-0 grid lg:grid-cols-[1fr_260px] bg-[#141211]">
-          {/* Main Visual Cropping Viewport */}
-          <div
-            ref={viewportRef}
-            className="relative flex items-center justify-center p-6 select-none bg-black/40 overflow-hidden"
-            onMouseMove={handlePointerMove}
-            onMouseUp={handlePointerUp}
-            onMouseLeave={handlePointerUp}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            {/* Aspect Ratio Box Mask Frame */}
-            {images.length > 0 && activeImage && (
+        {/* ═══════ Viewport ═══════ */}
+        <div
+          ref={viewportRef}
+          className="relative flex flex-1 items-center justify-center overflow-hidden bg-ink/30"
+          onWheel={handleWheel}
+        >
+          {activeImage ? (
+            <>
+              {/* Draggable Image Layer */}
               <div
-                ref={containerRef}
-                className="relative overflow-hidden border border-white/10 shadow-book flex items-center justify-center cursor-move"
-                style={{
-                  width: `${cropW}px`,
-                  height: `${cropH}px`,
-                  boxShadow: '0 0 0 9999px rgba(20, 18, 17, 0.72)'
-                }}
-                onMouseDown={handlePointerDown}
+                className="absolute inset-0 flex items-center justify-center"
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
                 onTouchStart={handleTouchStart}
-                onDoubleClick={handleDoubleTap}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onDoubleClick={handleReset}
+                style={{ touchAction: 'none', userSelect: 'none' }}
               >
-                {/* Image under CSS transform */}
                 <img
+                  ref={imageRef}
                   src={activeImage.src}
-                  alt="Crop Target"
+                  alt=""
                   draggable={false}
-                  onWheel={handleWheel}
+                  crossOrigin="anonymous"
                   onLoad={handleImageLoad}
-                  crossOrigin="anonymous" // prevent tainted canvas
-                  className="max-w-none origin-center pointer-events-none select-none"
+                  className="max-w-none origin-center"
                   style={{
-                    transform: `translate(${pan.x}px, ${pan.y}px) rotate(${rotate}deg) scale(${zoom})`,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    transition: isDraggingImage ? 'none' : 'transform 0.15s ease-out'
+                    width: activeImage.naturalW || 'auto',
+                    height: activeImage.naturalH || 'auto',
+                    transform: buildTransform(activeImage.panX, activeImage.panY, activeImage.zoom, activeImage.rotate),
+                    willChange: 'transform',
+                    visibility: isImageLoading ? 'hidden' : 'visible',
                   }}
                 />
-
-                {/* 3x3 Grid Overlay */}
-                <div
-                  className={`absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none transition-opacity duration-300 ${
-                    showGrid ? 'opacity-35' : 'opacity-0'
-                  }`}
-                >
-                  <div className="border-r border-b border-white" />
-                  <div className="border-r border-b border-white" />
-                  <div className="border-b border-white" />
-                  <div className="border-r border-b border-white" />
-                  <div className="border-r border-b border-white" />
-                  <div className="border-b border-white" />
-                  <div className="border-r border-white" />
-                  <div className="border-r border-white" />
-                  <div className="w-full h-full" />
-                </div>
-
-                {/* Resizable Corner Handles (Visible only in Free Crop) */}
-                {activeAspect === 'free' && (
-                  <>
-                    <div className="crop-resize-handle absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-white cursor-nwse-resize" />
-                    <div className="crop-resize-handle absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-white cursor-nesw-resize" />
-                    <div className="crop-resize-handle absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-white cursor-nesw-resize" />
-                    <div className="crop-resize-handle absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-white cursor-nwse-resize" />
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Instruction Banner */}
-            <p className="absolute bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-white/50 tracking-wider uppercase bg-black/40 px-3 py-1.5 rounded-full pointer-events-none text-center">
-              Drag to Pan • Pinch or Scroll to Zoom • Double Tap to toggle zoom
-            </p>
-          </div>
-
-          {/* Right Sidebar Control Column */}
-          <aside className="border-l border-white/5 bg-[#171513] p-5 flex flex-col justify-between overflow-y-auto space-y-6">
-            <div className="space-y-6">
-              {/* Aspect Ratio Presets */}
-              <div className="space-y-3">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-white/55 block">
-                  Crop Preset
-                </span>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  {ASPECT_PRESETS.map((preset) => (
-                    <button
-                      key={preset.id}
-                      onClick={() => {
-                        setActiveAspect(preset.id)
-                        updateActiveImageState({ aspect: preset.id }, true)
-                      }}
-                      className={`px-3 py-2.5 rounded-xl font-medium cursor-pointer transition-all border text-center ${
-                        activeAspect === preset.id
-                          ? 'bg-pink-accent border-pink-accent text-white shadow-md'
-                          : 'bg-white/5 border-white/5 hover:bg-white/10 text-white/80'
-                      }`}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
               </div>
 
-              {/* Slider for smooth Zoom */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-white/55">
-                  <span>Zoom Level</span>
-                  <span className="font-mono text-pink-accent">{zoom.toFixed(1)}x</span>
+              {/* Loading */}
+              {isImageLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center">
+                  <RefreshCw className="h-8 w-8 animate-spin text-pink-accent/60" />
                 </div>
-                <div className="flex items-center gap-3">
-                  <ZoomOut className="w-3.5 h-3.5 text-white/40" />
-                  <input
-                    type="range"
-                    min="0.8"
-                    max="5.0"
-                    step="0.05"
-                    value={zoom}
-                    onChange={(e) => {
-                      const nextZoom = parseFloat(e.target.value)
-                      setZoom(nextZoom)
-                      triggerGridAnimation()
-                    }}
-                    onMouseUp={() => updateActiveImageState({ zoom }, true)}
-                    onTouchEnd={() => updateActiveImageState({ zoom }, true)}
-                    className="flex-1 h-1.5 rounded-lg bg-white/10 accent-pink-accent cursor-pointer outline-none"
-                  />
-                  <ZoomIn className="w-3.5 h-3.5 text-white/40" />
-                </div>
-              </div>
+              )}
 
-              {/* Rotation actions */}
-              <div className="space-y-3">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-white/55 block">
-                  Rotation
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleRotateLeft}
-                    className="flex-1 py-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-semibold text-center flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" /> -90°
-                  </button>
-                  <button
-                    onClick={handleRotateRight}
-                    className="flex-1 py-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-semibold text-center flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-                  >
-                    <RotateCw className="w-3.5 h-3.5" /> +90°
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="pt-4 border-t border-white/5">
-              <button
-                onClick={handleOpenPreview}
-                className="w-full py-3.5 bg-pink-accent hover:bg-pink-accent/90 text-white rounded-2xl text-sm font-semibold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+              {/* Crop Frame Overlay */}
+              <div
+                className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2"
+                style={{
+                  width: frameW,
+                  height: frameH,
+                  boxShadow: '0 0 0 9999px rgba(44, 40, 37, 0.52)',
+                }}
               >
-                <Eye className="w-4 h-4" /> Save & Preview
-              </button>
+                {/* White border */}
+                <div className="absolute inset-0 rounded-sm border-2 border-white/90" />
+                {/* Grid */}
+                <div className={`absolute inset-0 transition-opacity duration-300 ${showGrid ? 'opacity-100' : 'opacity-0'}`}>
+                  <div className="grid h-full w-full grid-cols-3 grid-rows-3">
+                    {Array.from({ length: 9 }).map((_, i) => (
+                      <div key={i} className="border border-white/40" />
+                    ))}
+                  </div>
+                </div>
+                {/* Corner marks */}
+                <div className="absolute -left-px -top-px h-4 w-4 border-l-2 border-t-2 border-white" />
+                <div className="absolute -right-px -top-px h-4 w-4 border-r-2 border-t-2 border-white" />
+                <div className="absolute -bottom-px -left-px h-4 w-4 border-b-2 border-l-2 border-white" />
+                <div className="absolute -bottom-px -right-px h-4 w-4 border-b-2 border-r-2 border-white" />
+              </div>
+
+              {/* Zoom indicator (temporary) */}
+              <div className="pointer-events-none absolute left-4 top-4 z-20 rounded-full border border-white/20 bg-ink/40 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/80 backdrop-blur-sm">
+                {(activeImage.zoom || 1).toFixed(1)}×
+              </div>
+            </>
+          ) : (
+            /* Empty State */
+            <div className="flex flex-col items-center gap-4 px-6 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border border-beige/50 bg-paper text-pink-accent shadow-sm">
+                <Plus className="h-6 w-6" />
+              </div>
+              <p className="font-display text-lg font-semibold text-white/90">Add a photo to start</p>
+              <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                Choose from library
+              </Button>
             </div>
-          </aside>
+          )}
         </div>
 
-        {/* Filmstrip Footer */}
-        {images.length > 0 && (
-          <footer className="px-6 py-4.5 border-t border-white/5 bg-[#12100f] flex items-center gap-4.5 overflow-x-auto">
-            {images.map((imgObj, idx) => (
-              <div
-                key={imgObj.id}
-                draggable
-                onDragStart={(e) => handleFilmstripDragStart(e, idx)}
-                onDragOver={handleFilmstripDragOver}
-                onDrop={(e) => handleFilmstripDrop(e, idx)}
-                onClick={() => changeActiveImage(idx)}
-                className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 group cursor-pointer transition-all border-2 ${
-                  idx === activeIndex
-                    ? 'border-pink-accent ring-2 ring-pink-accent/20 scale-105'
-                    : 'border-white/10 opacity-60 hover:opacity-90'
-                }`}
+        {/* ═══════ Bottom Toolbar ═══════ */}
+        {activeImage && (
+          <div className="shrink-0 border-t border-beige/40 bg-paper">
+            {/* Tool Row */}
+            <div className="flex items-center justify-center gap-2 px-4 py-3 sm:gap-4">
+              {/* Aspect Ratio */}
+              <button
+                onClick={() => setActiveTool((t) => (t === 'ratio' ? null : 'ratio'))}
+                className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition-colors ${activeTool === 'ratio' ? 'bg-pink-accent/10 text-pink-accent' : 'text-ink-muted hover:bg-beige/30 hover:text-ink'}`}
               >
-                <img src={imgObj.src} alt="" className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={(e) => handleRemovePhoto(idx, e)}
-                  className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center text-white/80 opacity-0 group-hover:opacity-100 hover:text-rose-400 transition-opacity"
-                  title="Remove image"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 opacity-40 group-hover:opacity-100 transition-opacity" />
-              </div>
-            ))}
+                <Frame className="h-5 w-5" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider">Ratio</span>
+              </button>
 
-            {/* Add photos trigger inside editor */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/5 flex items-center justify-center text-white/50 hover:text-white hover:border-pink-accent cursor-pointer flex-shrink-0 transition-colors"
-              title="Add more photos"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleAddPhotos}
-            />
-          </footer>
+              {/* Zoom */}
+              <button
+                onClick={() => setActiveTool((t) => (t === 'zoom' ? null : 'zoom'))}
+                className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition-colors ${activeTool === 'zoom' ? 'bg-pink-accent/10 text-pink-accent' : 'text-ink-muted hover:bg-beige/30 hover:text-ink'}`}
+              >
+                <ZoomIn className="h-5 w-5" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider">Zoom</span>
+              </button>
+
+              {/* Grid toggle */}
+              <button
+                onClick={() => setShowGrid((v) => !v)}
+                className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition-colors ${showGrid ? 'bg-pink-accent/10 text-pink-accent' : 'text-ink-muted hover:bg-beige/30 hover:text-ink'}`}
+              >
+                <Grid3x3 className="h-5 w-5" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider">Grid</span>
+              </button>
+
+              {/* Rotate */}
+              <button
+                onClick={handleRotate}
+                className="flex flex-col items-center gap-1 rounded-xl px-4 py-2 text-ink-muted transition-colors hover:bg-beige/30 hover:text-ink"
+              >
+                <RotateCw className="h-5 w-5" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider">Rotate</span>
+              </button>
+
+              {/* Reset */}
+              <button
+                onClick={handleReset}
+                className="flex flex-col items-center gap-1 rounded-xl px-4 py-2 text-ink-muted transition-colors hover:bg-beige/30 hover:text-ink"
+              >
+                <RefreshCw className="h-5 w-5" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider">Reset</span>
+              </button>
+            </div>
+
+            {/* Expanded Ratio Selector */}
+            <AnimatePresence>
+              {activeTool === 'ratio' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden border-t border-beige/30 bg-parchment/40"
+                >
+                  <div className="flex items-center gap-3 overflow-x-auto px-4 py-3 scrollbar-thin">
+                    {ASPECT_RATIOS.map((ratio) => {
+                      const isActive = activeImage.aspectId === ratio.id
+                      return (
+                        <button
+                          key={ratio.id}
+                          onClick={() => handleSetAspect(ratio.id)}
+                          className={`flex shrink-0 flex-col items-center gap-2 rounded-xl px-4 py-3 transition-all ${isActive
+                            ? 'bg-pink-accent/10 text-pink-accent ring-1 ring-pink-accent/30'
+                            : 'bg-white/50 text-ink-muted hover:bg-white hover:text-ink'
+                            }`}
+                        >
+                          {/* Visual frame icon */}
+                          <div
+                            className={`rounded border-2 ${isActive ? 'border-pink-accent' : 'border-current'}`}
+                            style={{
+                              width: ratio.id === '9:16' ? 14 : ratio.id === '16:9' ? 28 : ratio.id === '4:5' ? 18 : 22,
+                              height: ratio.id === '9:16' ? 28 : ratio.id === '16:9' ? 14 : ratio.id === '4:5' ? 22 : 22,
+                            }}
+                          />
+                          <span className="text-[10px] font-semibold uppercase tracking-wider">{ratio.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Expanded Zoom Slider */}
+            <AnimatePresence>
+              {activeTool === 'zoom' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden border-t border-beige/30 bg-parchment/40"
+                >
+                  <div className="flex items-center gap-3 px-5 py-3">
+                    <span className="text-[10px] font-bold text-ink-muted">1×</span>
+                    <input
+                      type="range"
+                      min={MIN_ZOOM}
+                      max={MAX_ZOOM}
+                      step="0.01"
+                      value={activeImage.zoom}
+                      onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
+                      className="h-1.5 flex-1 cursor-pointer rounded-full accent-pink-accent"
+                    />
+                    <span className="text-[10px] font-bold text-ink-muted">4×</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Filmstrip */}
+            {images.length > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto border-t border-beige/30 bg-paper/80 px-4 py-2.5 scrollbar-thin">
+                {images.map((img, idx) => (
+                  <div
+                    key={img.id}
+                    draggable
+                    onDragStart={(e) => { e.dataTransfer.setData('text/plain', idx) }}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => handleFilmDrop(e, idx)}
+                    onClick={() => setActiveIndex(idx)}
+                    className={`group relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2 transition-all sm:h-14 sm:w-14 ${idx === activeIndex ? 'border-pink-accent ring-2 ring-pink-accent/20' : 'border-beige/40 opacity-70 hover:opacity-100'
+                      }`}
+                  >
+                    <img src={img.src} alt="" className="h-full w-full object-cover" loading="lazy" />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleRemovePhoto(idx) }}
+                      className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-ink/60 text-paper opacity-0 transition-opacity hover:bg-pink-accent group-hover:opacity-100"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-beige/60 text-ink-muted transition-colors hover:border-pink-accent/40 hover:text-pink-accent sm:h-14 sm:w-14"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
-        {/* Sub-modal: Processing / Progress Indicator overlay */}
+        {/* Hidden input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleAddPhotos}
+        />
+
+        {/* ═══════ Processing Overlay ═══════ */}
         <AnimatePresence>
-          {processingState && (
+          {isProcessing && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center p-8 text-center"
+              className="absolute inset-0 z-50 flex items-center justify-center bg-ink/50 px-6 backdrop-blur-sm"
             >
-              {processingState === 'compressing' && (
-                <div className="space-y-4 max-w-sm">
-                  <RefreshCw className="w-10 h-10 animate-spin text-pink-accent mx-auto" />
-                  <h3 className="font-display text-xl font-bold text-cream">Optimizing Image Quality</h3>
-                  <p className="text-xs text-white/50 leading-relaxed">
-                    Automatically compressing image size, preserving clarity and resolving details...
-                  </p>
-                  <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-pink-accent h-full transition-all duration-300"
-                      style={{ width: `${progress}%` }}
-                    />
+              <div className="w-full max-w-xs rounded-[24px] border border-beige/50 bg-paper p-6 text-center shadow-book sm:max-w-sm">
+                {processingStep === 'render' && (
+                  <div className="space-y-3">
+                    <RefreshCw className="mx-auto h-8 w-8 animate-spin text-pink-accent" />
+                    <p className="font-display text-lg font-semibold text-ink">Preparing preview…</p>
+                    <div className="h-2 overflow-hidden rounded-full bg-beige/50">
+                      <motion.div className="h-full rounded-full bg-pink-accent" animate={{ width: `${progress}%` }} />
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {processingState === 'uploading' && (
-                <div className="space-y-4 max-w-sm">
-                  <RefreshCw className="w-10 h-10 animate-spin text-pink-accent mx-auto" />
-                  <h3 className="font-display text-xl font-bold text-cream">Preserving to Scrapbook</h3>
-                  <p className="text-xs text-white/50 leading-relaxed">
-                    Saving files in background. Please do not close your browser tab...
-                  </p>
-                  <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-pink-accent h-full transition-all duration-300"
-                      style={{ width: `${progress}%` }}
-                    />
+                )}
+                {processingStep === 'save' && (
+                  <div className="space-y-3">
+                    <RefreshCw className="mx-auto h-8 w-8 animate-spin text-pink-accent" />
+                    <p className="font-display text-lg font-semibold text-ink">Saving…</p>
+                    <div className="h-2 overflow-hidden rounded-full bg-beige/50">
+                      <motion.div className="h-full rounded-full bg-pink-accent" animate={{ width: `${progress}%` }} />
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {processingState === 'success' && (
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="space-y-4"
-                >
-                  <div className="w-16 h-16 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto shadow-lg">
-                    <Check className="w-8 h-8 stroke-[3]" />
-                  </div>
-                  <h3 className="font-display text-2xl font-bold text-cream italic">Preserved Successfully</h3>
-                  <p className="text-xs text-white/60">
-                    Your beautiful moments have been compressed and uploaded.
-                  </p>
-                </motion.div>
-              )}
+                )}
+                {processingStep === 'done' && (
+                  <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="space-y-3">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white">
+                      <Check className="h-6 w-6 stroke-[3]" />
+                    </div>
+                    <p className="font-display text-lg font-semibold text-ink">Saved!</p>
+                  </motion.div>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Sub-modal: Before Saving Preview Confirmation panel */}
+        {/* ═══════ Preview / Confirm Overlay ═══════ */}
         <AnimatePresence>
-          {showSavePreview && (
+          {showPreview && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-40 bg-black/90 flex items-center justify-center p-6"
+              className="absolute inset-0 z-40 flex items-center justify-center bg-ink/60 px-4 py-6 backdrop-blur-sm"
             >
               <motion.div
-                initial={{ scale: 0.95, y: 15 }}
+                initial={{ scale: 0.96, y: 16 }}
                 animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.95, y: 15 }}
-                className="bg-[#1c1917] max-w-2xl w-full rounded-[28px] border border-beige/10 p-6 flex flex-col max-h-[85vh] overflow-hidden shadow-2xl"
+                exit={{ scale: 0.96, y: 16 }}
+                className="flex w-full max-w-lg max-h-[90dvh] flex-col overflow-hidden rounded-[24px] border border-beige/50 bg-paper shadow-book"
               >
-                <header className="flex items-center justify-between border-b border-white/5 pb-4 mb-4">
-                  <h3 className="font-display text-lg font-semibold italic text-cream">
-                    Verify Upload Preview
-                  </h3>
+                <header className="flex items-center justify-between border-b border-beige/40 px-5 py-3">
+                  <h3 className="font-display text-lg font-semibold text-ink">Preview</h3>
                   <button
-                    onClick={() => setShowSavePreview(false)}
-                    className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors"
+                    onClick={() => setShowPreview(false)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-beige/30"
                   >
-                    <X className="w-3.5 h-3.5 text-white/70" />
+                    <X className="h-4 w-4" />
                   </button>
                 </header>
 
-                <div className="flex-1 overflow-y-auto space-y-6 pb-2">
-                  <p className="text-xs text-white/60">
-                    Here is exactly how your cropped image(s) will appear on the page. Confirm below to complete the upload.
-                  </p>
-                  
-                  {/* Previews Layout */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {savePreviews.map((preview) => (
-                      <div
-                        key={preview.id}
-                        className="relative rounded-2xl overflow-hidden border border-white/10 bg-[#141211] p-1.5 flex flex-col justify-center items-center shadow-md"
-                      >
-                        <img
-                          src={preview.dataUrl}
-                          alt=""
-                          className="max-h-56 object-contain rounded-xl"
-                        />
-                        <span className="text-[10px] text-white/45 mt-2 block font-mono truncate max-w-full px-2">
-                          {preview.name}
-                        </span>
+                <div className="flex-1 overflow-y-auto p-4">
+                  <div className="grid grid-cols-1 gap-4">
+                    {previewUrls.map((p) => (
+                      <div key={p.id} className="rounded-[18px] border border-beige/50 bg-white/60 p-2 shadow-sm">
+                        <div className="flex items-center justify-center overflow-hidden rounded-[14px] bg-paper-warm">
+                          <img src={p.dataUrl} alt="" className="max-h-64 w-full object-contain" loading="lazy" />
+                        </div>
+                        <div className="mt-2 flex items-center justify-between px-1">
+                          <span className="truncate text-xs font-semibold text-ink">{p.name}</span>
+                          {p.fallback && (
+                            <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-700">
+                              Fallback
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <footer className="flex items-center justify-end gap-3.5 border-t border-white/5 pt-4 mt-4">
-                  <button
-                    onClick={() => setShowSavePreview(false)}
-                    className="px-4.5 py-2.5 rounded-xl text-xs font-semibold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 cursor-pointer transition-colors"
-                  >
-                    Back to Edit
-                  </button>
-                  <button
-                    onClick={handleConfirmUpload}
-                    className="px-5 py-2.5 bg-pink-accent hover:bg-pink-accent/90 text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-md"
-                  >
-                    Confirm Upload
-                  </button>
+                <footer className="flex flex-col-reverse gap-2 border-t border-beige/40 bg-white/50 px-5 py-3 sm:flex-row sm:justify-end">
+                  <Button variant="secondary" onClick={() => setShowPreview(false)} className="min-h-10">
+                    Back
+                  </Button>
+                  <Button onClick={handleConfirmSave} className="min-h-10">
+                    Confirm & Save
+                  </Button>
                 </footer>
               </motion.div>
             </motion.div>
