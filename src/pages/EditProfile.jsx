@@ -14,7 +14,6 @@ import Navbar from '../components/Navbar'
 import ImageCanvas from '../components/ImageCanvas'
 import { useApp } from '../context/AppContext'
 
-const takenUsernames = ['admin', 'community', 'priyasharma', 'memorykeeper']
 const defaultAvatar =
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop&crop=face'
 const defaultCover =
@@ -42,7 +41,6 @@ export default function EditProfile() {
     [user],
   )
 
-  const [username, setUsername] = useState(initialProfile.username)
   const [displayName, setDisplayName] = useState(initialProfile.displayName)
   const [bio, setBio] = useState(initialProfile.bio)
   const [privacy, setPrivacy] = useState(initialProfile.privacy)
@@ -50,21 +48,19 @@ export default function EditProfile() {
   const [coverFile, setCoverFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(initialProfile.avatar)
   const [coverPreview, setCoverPreview] = useState(initialProfile.cover)
-  const [debouncedUsername, setDebouncedUsername] = useState(initialProfile.username)
   const [isSaving, setIsSaving] = useState(false)
   const [toast, setToast] = useState(null)
   const [showUnsavedModal, setShowUnsavedModal] = useState(false)
 
   const isDirty = useMemo(() => {
     return (
-      username !== initialProfile.username ||
       displayName !== initialProfile.displayName ||
       bio !== initialProfile.bio ||
       privacy !== initialProfile.privacy ||
       Boolean(avatarFile) ||
       Boolean(coverFile)
     )
-  }, [avatarFile, bio, coverFile, displayName, initialProfile, privacy, username])
+  }, [avatarFile, bio, coverFile, displayName, initialProfile, privacy])
 
   useEffect(() => {
     if (!isDirty) return undefined
@@ -77,30 +73,6 @@ export default function EditProfile() {
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isDirty])
-
-  const normalizedUsername = username.trim().toLowerCase()
-  const usernameFormatError = useMemo(() => {
-    if (!normalizedUsername) return 'Username is required.'
-    if (!/^[a-z0-9_]{3,20}$/.test(normalizedUsername)) {
-      return 'Use 3-20 lowercase letters, numbers, or underscores.'
-    }
-    return ''
-  }, [normalizedUsername])
-
-  useEffect(() => {
-    if (usernameFormatError) return undefined
-    const timer = window.setTimeout(() => {
-      setDebouncedUsername(normalizedUsername)
-    }, 420)
-
-    return () => window.clearTimeout(timer)
-  }, [normalizedUsername, usernameFormatError])
-
-  const isOwnUsername = debouncedUsername === initialProfile.username.toLowerCase()
-  const isUsernameTaken = takenUsernames.includes(debouncedUsername) && !isOwnUsername
-  const isUsernameChecking = !usernameFormatError && debouncedUsername !== normalizedUsername
-  const usernameError = usernameFormatError || (isUsernameTaken ? 'That username is already taken.' : '')
-  const usernameStatus = usernameError ? 'error' : isUsernameChecking ? 'checking' : 'available'
 
   useEffect(() => {
     if (!toast) return undefined
@@ -118,9 +90,7 @@ export default function EditProfile() {
   const bioRemaining = 250 - bio.length
   const isBioWarning = bioRemaining <= 30
   const canSave =
-    isDirty && !isSaving && usernameStatus === 'available' && bio.length <= 250
-
-  // Image handles are now fully managed by the Universal ImageCanvas component.
+    isDirty && !isSaving && bio.length <= 250
 
   const handleCancel = () => {
     if (isDirty) {
@@ -145,7 +115,7 @@ export default function EditProfile() {
     await new Promise((resolve) => window.setTimeout(resolve, 900))
 
     updateUser({
-      username: username.trim().toLowerCase(),
+      username: initialProfile.username, // Keep the original username
       name: displayName.trim(),
       bio,
       privacy,
@@ -171,14 +141,6 @@ export default function EditProfile() {
           className="mb-8 flex items-start justify-between gap-5"
         >
           <div>
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="mb-5 inline-flex h-11 items-center gap-2 rounded-full border border-beige bg-paper px-4 text-sm font-medium text-ink-muted transition-all hover:border-pink-accent hover:text-pink-accent cursor-pointer"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Dashboard
-            </button>
             <p className="font-handwritten text-xl text-pink-accent">Your public scrapbook cover</p>
             <h1 className="mt-2 font-display text-5xl sm:text-6xl leading-none">
               Edit Profile
@@ -231,33 +193,18 @@ export default function EditProfile() {
 
           <div className="grid gap-8 px-6 pb-7 pt-24 sm:px-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
             <div className="space-y-6">
-
+              {/* Display Username as Read-Only */}
+              <div className="block">
+                <span className="text-sm font-semibold text-ink">Username</span>
+                <div className="mt-2 h-13 w-full rounded-2xl border border-beige bg-paper-warm px-4 py-2.5 text-ink/70 flex items-center">
+                  <span className="font-mono text-sm">@{initialProfile.username}</span>
+                  <span className="ml-3 text-xs text-ink-muted bg-beige/30 px-2 py-0.5 rounded-full">
+                    Cannot be changed
+                  </span>
+                </div>
+              </div>
 
               <div className="grid gap-5 sm:grid-cols-2">
-                <label className="block">
-                  <span className="text-sm font-semibold text-ink">Username</span>
-                  <div className="relative mt-2">
-                    <input
-                      value={username}
-                      onChange={(event) => setUsername(event.target.value)}
-                      className="h-13 w-full rounded-2xl border border-beige bg-paper px-4 pr-11 text-ink outline-none transition-colors focus:border-pink-accent"
-                      placeholder="your_username"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2">
-                      {usernameStatus === 'checking' && <Spinner />}
-                      {usernameStatus === 'available' && (
-                        <Check className="h-4 w-4 text-pink-accent" aria-hidden="true" />
-                      )}
-                      {usernameStatus === 'error' && (
-                        <X className="h-4 w-4 text-rose-muted" aria-hidden="true" />
-                      )}
-                    </span>
-                  </div>
-                  <p className={`mt-2 min-h-5 text-xs ${usernameError ? 'text-rose-muted' : 'text-ink-muted'}`}>
-                    {usernameError || 'Letters, numbers, and underscores only.'}
-                  </p>
-                </label>
-
                 <label className="block">
                   <span className="text-sm font-semibold text-ink">Display Name</span>
                   <input
@@ -303,9 +250,8 @@ export default function EditProfile() {
                         key={option.id}
                         type="button"
                         onClick={() => setPrivacy(option.id)}
-                        className={`relative h-12 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
-                          isActive ? 'text-white' : 'text-ink-muted hover:text-ink'
-                        }`}
+                        className={`relative h-12 rounded-xl text-sm font-medium transition-colors cursor-pointer ${isActive ? 'text-white' : 'text-ink-muted hover:text-ink'
+                          }`}
                       >
                         {isActive && (
                           <motion.span

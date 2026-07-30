@@ -3,9 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Check,
   ChevronLeft,
-  Frame,
   Grid3x3,
-  Image as ImageIcon,
   Plus,
   RefreshCw,
   RotateCw,
@@ -13,26 +11,12 @@ import {
   X,
   ZoomIn,
 } from 'lucide-react'
-import Button from './ui/Button'
-
-/* ═══════════════════════════════════════════════
-   CONSTANTS
-   ═══════════════════════════════════════════════ */
-const ASPECT_RATIOS = [
-  { id: 'original', label: 'Original', ratio: null, icon: ImageIcon },
-  { id: '1:1', label: '1:1', ratio: 1, icon: Frame },
-  { id: '4:5', label: '4:5', ratio: 4 / 5, icon: Frame },
-  { id: '16:9', label: '16:9', ratio: 16 / 9, icon: Frame },
-  { id: '9:16', label: '9:16', ratio: 9 / 16, icon: Frame },
-]
 
 const MIN_ZOOM = 1
 const MAX_ZOOM = 4
 const OUTPUT_SIZE = 1200
+const BACKGROUND_COLOR = '#fdf8f0'
 
-/* ═══════════════════════════════════════════════
-   HELPERS
-   ═══════════════════════════════════════════════ */
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v))
 const wait = (ms) => new Promise((r) => window.setTimeout(r, ms))
 
@@ -59,7 +43,6 @@ const createImageRecord = (fileOrUrl) => {
     rotate: 0,
     panX: 0,
     panY: 0,
-    aspectId: 'original',
   }
 }
 
@@ -82,37 +65,32 @@ const loadImageAsset = (src, timeoutMs = 10000) =>
     if (img.complete && img.naturalWidth > 0) finish({ ok: true, img })
   })
 
-/* ═══════════════════════════════════════════════
-   COMPONENT
-   ═══════════════════════════════════════════════ */
 export default function ImageEditorModal({
   isOpen,
   onClose,
   initialFiles = [],
   onSaveComplete,
-  defaultCropMode = 'original',
+  aspectRatio = 1,
 }) {
-  /* ── State ─────────────────────────────────── */
   const [images, setImages] = useState([])
   const [activeIndex, setActiveIndex] = useState(0)
   const [showGrid, setShowGrid] = useState(false)
-  const [activeTool, setActiveTool] = useState(null) // 'ratio' | 'zoom'
+  const [activeTool, setActiveTool] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [processingStep, setProcessingStep] = useState(null) // 'render' | 'save' | 'done'
+  const [processingStep, setProcessingStep] = useState(null)
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState('')
   const [showPreview, setShowPreview] = useState(false)
   const [previewUrls, setPreviewUrls] = useState([])
   const [isImageLoading, setIsImageLoading] = useState(false)
 
-  /* ── Refs ──────────────────────────────────── */
   const mountRef = useRef(false)
   const viewportRef = useRef(null)
   const imageRef = useRef(null)
   const fileInputRef = useRef(null)
   const gestureRef = useRef({
     active: false,
-    type: null, // 'pan' | 'pinch'
+    type: null,
     startX: 0,
     startY: 0,
     initialPanX: 0,
@@ -127,23 +105,14 @@ export default function ImageEditorModal({
 
   const activeImage = images[activeIndex] || null
 
-  /* ── Derived: current aspect ratio object ────── */
-  const currentAspect = useMemo(() => {
-    if (!activeImage) return ASPECT_RATIOS[0]
-    return ASPECT_RATIOS.find((a) => a.id === activeImage.aspectId) || ASPECT_RATIOS[0]
-  }, [activeImage])
-
-  /* ── Error helper ──────────────────────────── */
   const showError = useCallback((msg) => {
     setError(msg)
     if (errorTimerRef.current) window.clearTimeout(errorTimerRef.current)
     errorTimerRef.current = window.setTimeout(() => mountRef.current && setError(''), 4000)
   }, [])
 
-  /* ── Frame size calculator ─────────────────── */
   const getFrameSize = useCallback(
-    (maxW, maxH) => {
-      const ratio = currentAspect.ratio || activeImage?.naturalRatio || 1
+    (maxW, maxH, ratio = aspectRatio) => {
       let w = maxW
       let h = w / ratio
       if (h > maxH) {
@@ -152,35 +121,37 @@ export default function ImageEditorModal({
       }
       return { w: Math.round(w), h: Math.round(h) }
     },
-    [currentAspect, activeImage]
+    [aspectRatio]
   )
 
-  /* ── Pan bounds calculator ───────────────────── */
+  // Helper: compute baseScale (fit to frame) for the active image
+  const getBaseScale = useCallback((img, frameW, frameH) => {
+    if (!img || !img.naturalW || !img.naturalH) return 1
+    const isSwapped = Math.abs(img.rotate % 180) === 90
+    const srcW = isSwapped ? img.naturalH : img.naturalW
+    const srcH = isSwapped ? img.naturalW : img.naturalH
+    return Math.min(frameW / srcW, frameH / srcH)
+  }, [])
+
   const getPanBounds = useCallback(
     (frameW, frameH, zoom, rotate) => {
       if (!activeImage || !activeImage.naturalW) return { minX: 0, maxX: 0, minY: 0, maxY: 0 }
-      // Effective dimensions after rotation (swap if 90° or 270°)
       const isSwapped = Math.abs(rotate % 180) === 90
       const imgW = isSwapped ? activeImage.naturalH : activeImage.naturalW
       const imgH = isSwapped ? activeImage.naturalW : activeImage.naturalH
-
-      // Base scale to cover frame
-      const baseScale = Math.max(frameW / imgW, frameH / imgH)
+      const baseScale = Math.min(frameW / imgW, frameH / imgH)
       const totalScale = baseScale * zoom
       const displayW = imgW * totalScale
       const displayH = imgH * totalScale
-
       const minX = frameW / 2 - displayW / 2
       const maxX = displayW / 2 - frameW / 2
       const minY = frameH / 2 - displayH / 2
       const maxY = displayH / 2 - frameH / 2
-
       return { minX, maxX, minY, maxY }
     },
     [activeImage]
   )
 
-  /* ── Clamp pan to bounds ─────────────────────── */
   const clampPan = useCallback(
     (px, py, zoom, rotate) => {
       if (!viewportRef.current || !activeImage) return { x: px, y: py }
@@ -192,15 +163,12 @@ export default function ImageEditorModal({
     [activeImage, getFrameSize, getPanBounds]
   )
 
-  /* ── Commit helpers ──────────────────────────── */
   const commitToActive = useCallback(
     (updates) => {
       setImages((prev) => prev.map((img, i) => (i === activeIndex ? { ...img, ...updates } : img)))
     },
     [activeIndex]
   )
-
-  /* ── Effects ───────────────────────────────── */
 
   useEffect(() => {
     mountRef.current = true
@@ -234,18 +202,11 @@ export default function ImageEditorModal({
       return
     }
     const next = initialFiles.map((f) => createImageRecord(f))
-    // Apply defaultCropMode as aspect if valid
-    const validAspect = ASPECT_RATIOS.find((a) => a.id === defaultCropMode)
-    if (validAspect) {
-      next.forEach((img) => (img.aspectId = defaultCropMode))
-    }
     setImages(next)
     setActiveIndex(0)
     setIsImageLoading(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, initialFiles, defaultCropMode])
+  }, [isOpen, initialFiles])
 
-  /* ── Keyboard shortcuts ────────────────────── */
   useEffect(() => {
     if (!isOpen) return
     const onKey = (e) => {
@@ -266,8 +227,6 @@ export default function ImageEditorModal({
     return () => window.removeEventListener('keydown', onKey)
   }, [isOpen, activeImage, activeTool, showPreview, onClose])
 
-  /* ── Handlers ──────────────────────────────── */
-
   const handleImageLoad = (e) => {
     const { naturalWidth, naturalHeight } = e.target
     if (!naturalWidth || !naturalHeight) return
@@ -275,7 +234,7 @@ export default function ImageEditorModal({
     setImages((prev) =>
       prev.map((img, i) =>
         i === activeIndex
-          ? { ...img, naturalW: naturalWidth, naturalH: naturalHeight, naturalRatio: ratio }
+          ? { ...img, naturalW: naturalWidth, naturalH: naturalHeight, naturalRatio: ratio, zoom: 1, panX: 0, panY: 0 }
           : img
       )
     )
@@ -285,21 +244,9 @@ export default function ImageEditorModal({
   const handleRotate = () => {
     if (!activeImage) return
     const nextRotate = (activeImage.rotate + 90) % 360
-    // Re-clamp pan after rotation
-    const nextPan = clampPan(activeImage.panX, activeImage.panY, activeImage.zoom, nextRotate)
-    commitToActive({ rotate: nextRotate, panX: nextPan.x, panY: nextPan.y })
-    setShowGrid(true)
-    window.setTimeout(() => mountRef.current && setShowGrid(false), 900)
-  }
-
-  const handleSetAspect = (aspectId) => {
-    if (!activeImage) return
-    commitToActive({ aspectId })
-    // Re-clamp pan for new aspect
-    requestAnimationFrame(() => {
-      const nextPan = clampPan(activeImage.panX, activeImage.panY, activeImage.zoom, activeImage.rotate)
-      commitToActive({ panX: nextPan.x, panY: nextPan.y })
-    })
+    const clampedZoom = Math.max(activeImage.zoom, MIN_ZOOM)
+    const nextPan = clampPan(activeImage.panX, activeImage.panY, clampedZoom, nextRotate)
+    commitToActive({ rotate: nextRotate, zoom: clampedZoom, panX: nextPan.x, panY: nextPan.y })
     setShowGrid(true)
     window.setTimeout(() => mountRef.current && setShowGrid(false), 900)
   }
@@ -313,13 +260,11 @@ export default function ImageEditorModal({
 
   const handleReset = () => {
     if (!activeImage) return
-    const nextPan = clampPan(0, 0, 1, activeImage.rotate)
-    commitToActive({ zoom: 1, panX: nextPan.x, panY: nextPan.y })
+    const nextPan = clampPan(0, 0, MIN_ZOOM, activeImage.rotate)
+    commitToActive({ zoom: MIN_ZOOM, panX: nextPan.x, panY: nextPan.y })
     setShowGrid(true)
     window.setTimeout(() => mountRef.current && setShowGrid(false), 900)
   }
-
-  /* ── Pointer Gestures ──────────────────────── */
 
   const handlePointerDown = (e) => {
     if (!activeImage) return
@@ -345,7 +290,10 @@ export default function ImageEditorModal({
     const rawY = g.initialPanY + dy
     const clamped = clampPan(rawX, rawY, g.initialZoom, activeImage.rotate)
     if (imageRef.current) {
-      imageRef.current.style.transform = buildTransform(clamped.x, clamped.y, g.initialZoom, activeImage.rotate)
+      const rect = viewportRef.current.getBoundingClientRect()
+      const { w: frameW, h: frameH } = getFrameSize(rect.width - 32, rect.height - 32)
+      const baseScale = getBaseScale(activeImage, frameW, frameH)
+      imageRef.current.style.transform = buildTransform(clamped.x, clamped.y, baseScale * g.initialZoom, activeImage.rotate)
     }
   }
 
@@ -354,21 +302,19 @@ export default function ImageEditorModal({
     if (!g.active) return
     g.active = false
     try { e.target.releasePointerCapture(e.pointerId) } catch (_) { }
-    // Read final transform from DOM
     const transform = imageRef.current?.style.transform || ''
-    const tMatch = transform.match(/translate\\(([^p]+)px,\\s*([^p]+)px\\)/)
-    const sMatch = transform.match(/scale\\(([^)]+)\\)/)
+    const tMatch = transform.match(/translate\(([^p]+)px,\s*([^p]+)px\)/)
+    const sMatch = transform.match(/scale\(([^)]+)\)/)
     const finalPan = {
       x: tMatch ? parseFloat(tMatch[1]) : activeImage.panX,
       y: tMatch ? parseFloat(tMatch[2]) : activeImage.panY,
     }
-    const finalZoom = sMatch ? parseFloat(sMatch[1]) : activeImage.zoom
-    const clamped = clampPan(finalPan.x, finalPan.y, finalZoom, activeImage.rotate)
+    const finalZoom = sMatch ? parseFloat(sMatch[1]) / getBaseScale(activeImage, frameW, frameH) : activeImage.zoom // not perfect but we commit the zoom from state
+    const clamped = clampPan(finalPan.x, finalPan.y, activeImage.zoom, activeImage.rotate)
     commitToActive({ panX: clamped.x, panY: clamped.y })
     setShowGrid(false)
   }
 
-  /* ── Touch Pinch ───────────────────────────── */
   const handleTouchStart = (e) => {
     if (e.touches.length === 2 && activeImage) {
       e.preventDefault()
@@ -390,7 +336,10 @@ export default function ImageEditorModal({
       const nextZoom = clamp(g.pinchStartZoom * scale, MIN_ZOOM, MAX_ZOOM)
       const nextPan = clampPan(activeImage.panX, activeImage.panY, nextZoom, activeImage.rotate)
       if (imageRef.current) {
-        imageRef.current.style.transform = buildTransform(nextPan.x, nextPan.y, nextZoom, activeImage.rotate)
+        const rect = viewportRef.current.getBoundingClientRect()
+        const { w: frameW, h: frameH } = getFrameSize(rect.width - 32, rect.height - 32)
+        const baseScale = getBaseScale(activeImage, frameW, frameH)
+        imageRef.current.style.transform = buildTransform(nextPan.x, nextPan.y, baseScale * nextZoom, activeImage.rotate)
       }
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
       rafRef.current = requestAnimationFrame(() => {
@@ -409,7 +358,6 @@ export default function ImageEditorModal({
     }
   }
 
-  /* ── Wheel Zoom ────────────────────────────── */
   const handleWheel = (e) => {
     e.preventDefault()
     if (!activeImage) return
@@ -424,12 +372,11 @@ export default function ImageEditorModal({
     })
   }
 
-  /* ── Build CSS transform string ────────────── */
-  const buildTransform = (px, py, zoom, rotate) => {
-    return `translate(${px}px, ${py}px) rotate(${rotate}deg) scale(${zoom})`
+  // buildTransform now accepts a full scale (baseScale * zoom)
+  const buildTransform = (px, py, scale, rotate) => {
+    return `translate(${px}px, ${py}px) rotate(${rotate}deg) scale(${scale})`
   }
 
-  /* ── Filmstrip ─────────────────────────────── */
   const handleFilmDragStart = (idx) => { /* native dnd */ }
   const handleFilmDrop = (e, idx) => {
     e.preventDefault()
@@ -473,8 +420,9 @@ export default function ImageEditorModal({
     setImages(filtered)
   }
 
-  /* ── Preview & Save ────────────────────────── */
-
+  // ============================================================
+  // FIXED: renderPreviewForImage – WYSIWYG export
+  // ============================================================
   const renderPreviewForImage = async (imgObj) => {
     const loaded = await loadImageAsset(imgObj.src)
     if (!loaded.ok || !loaded.img) {
@@ -486,35 +434,41 @@ export default function ImageEditorModal({
       const ctx = canvas.getContext('2d')
       if (!ctx) throw new Error('no ctx')
 
-      const aspect = ASPECT_RATIOS.find((a) => a.id === imgObj.aspectId)
-      const ratio = aspect?.ratio || imgObj.naturalRatio || 1
       const outW = OUTPUT_SIZE
-      const outH = Math.round(outW / ratio)
+      const outH = Math.round(outW / aspectRatio)
       canvas.width = outW
       canvas.height = outH
 
-      ctx.fillStyle = '#fdf8f0'
+      ctx.fillStyle = BACKGROUND_COLOR
       ctx.fillRect(0, 0, outW, outH)
-      ctx.save()
-      ctx.translate(outW / 2, outH / 2)
 
-      // Frame size in source pixels
+      const rect = viewportRef.current?.getBoundingClientRect()
+      if (!rect) throw new Error('no viewport')
+      const { w: frameW, h: frameH } = getFrameSize(rect.width - 32, rect.height - 32)
+
+      // Same baseScale as in viewport
       const isSwapped = Math.abs(imgObj.rotate % 180) === 90
       const srcW = isSwapped ? imgObj.naturalH : imgObj.naturalW
       const srcH = isSwapped ? imgObj.naturalW : imgObj.naturalH
-      const baseScale = Math.max(outW / srcW, outH / srcH)
-      const totalScale = baseScale * imgObj.zoom
+      const baseScale = Math.min(frameW / srcW, frameH / srcH)
+      const viewportTotalScale = baseScale * imgObj.zoom
 
-      // Pan in output coordinates
-      const panScale = outW / (outW / baseScale) // simplified: pan maps 1:1 relative to base
-      const effPanX = imgObj.panX * (outW / (srcW * baseScale * imgObj.zoom)) * totalScale
-      const effPanY = imgObj.panY * (outH / (srcH * baseScale * imgObj.zoom)) * totalScale
+      // Position in viewport coordinates
+      const viewportCenterX = frameW / 2 + imgObj.panX
+      const viewportCenterY = frameH / 2 + imgObj.panY
 
-      ctx.translate(imgObj.panX * (outW / (srcW * baseScale)), imgObj.panY * (outH / (srcH * baseScale)))
+      // Scale to canvas
+      const scaleFactor = outW / frameW
+      const canvasCenterX = viewportCenterX * scaleFactor
+      const canvasCenterY = viewportCenterY * scaleFactor
+      const canvasTotalScale = viewportTotalScale * scaleFactor
+
+      ctx.save()
+      ctx.translate(canvasCenterX, canvasCenterY)
       ctx.rotate((imgObj.rotate * Math.PI) / 180)
 
-      const drawW = imgObj.naturalW * totalScale
-      const drawH = imgObj.naturalH * totalScale
+      const drawW = imgObj.naturalW * canvasTotalScale
+      const drawH = imgObj.naturalH * canvasTotalScale
       ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH)
       ctx.restore()
 
@@ -570,27 +524,30 @@ export default function ImageEditorModal({
     }
   }
 
-  /* ── Render guards ─────────────────────────── */
   if (!isOpen) return null
 
-  /* ── Compute frame size for render ─────────── */
   let frameW = 300
   let frameH = 300
+  let baseScale = 1
   if (viewportRef.current && activeImage) {
     const rect = viewportRef.current.getBoundingClientRect()
     const size = getFrameSize(rect.width - 32, rect.height - 32)
     frameW = size.w
     frameH = size.h
+    if (activeImage.naturalW && activeImage.naturalH) {
+      baseScale = getBaseScale(activeImage, frameW, frameH)
+    }
   } else if (activeImage) {
-    const ratio = currentAspect.ratio || activeImage.naturalRatio || 1
+    const ratio = aspectRatio
     frameW = 300
     frameH = frameW / ratio
+    if (activeImage.naturalW && activeImage.naturalH) {
+      baseScale = getBaseScale(activeImage, frameW, frameH)
+    }
   }
 
-  /* ── JSX ───────────────────────────────────── */
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center">
-      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -599,7 +556,6 @@ export default function ImageEditorModal({
         onClick={onClose}
       />
 
-      {/* Modal */}
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -607,7 +563,6 @@ export default function ImageEditorModal({
         transition={{ duration: 0.2 }}
         className="relative flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden bg-paper shadow-2xl sm:h-[95dvh] sm:rounded-[24px]"
       >
-        {/* ═══════ Header ═══════ */}
         <header className="flex shrink-0 items-center justify-between border-b border-beige/40 bg-paper px-4 py-3 sm:px-6">
           <button
             onClick={onClose}
@@ -628,7 +583,6 @@ export default function ImageEditorModal({
           </button>
         </header>
 
-        {/* ═══════ Error Banner ═══════ */}
         <AnimatePresence>
           {error && (
             <motion.div
@@ -643,15 +597,14 @@ export default function ImageEditorModal({
           )}
         </AnimatePresence>
 
-        {/* ═══════ Viewport ═══════ */}
         <div
           ref={viewportRef}
-          className="relative flex flex-1 items-center justify-center overflow-hidden bg-ink/30"
+          className="relative flex flex-1 items-center justify-center overflow-hidden"
+          style={{ backgroundColor: BACKGROUND_COLOR }}
           onWheel={handleWheel}
         >
           {activeImage ? (
             <>
-              {/* Draggable Image Layer */}
               <div
                 className="absolute inset-0 flex items-center justify-center"
                 onPointerDown={handlePointerDown}
@@ -675,32 +628,29 @@ export default function ImageEditorModal({
                   style={{
                     width: activeImage.naturalW || 'auto',
                     height: activeImage.naturalH || 'auto',
-                    transform: buildTransform(activeImage.panX, activeImage.panY, activeImage.zoom, activeImage.rotate),
+                    transform: buildTransform(
+                      activeImage.panX,
+                      activeImage.panY,
+                      baseScale * activeImage.zoom,
+                      activeImage.rotate
+                    ),
                     willChange: 'transform',
                     visibility: isImageLoading ? 'hidden' : 'visible',
                   }}
                 />
               </div>
 
-              {/* Loading */}
               {isImageLoading && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center">
                   <RefreshCw className="h-8 w-8 animate-spin text-pink-accent/60" />
                 </div>
               )}
 
-              {/* Crop Frame Overlay */}
               <div
                 className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2"
-                style={{
-                  width: frameW,
-                  height: frameH,
-                  boxShadow: '0 0 0 9999px rgba(44, 40, 37, 0.52)',
-                }}
+                style={{ width: frameW, height: frameH }}
               >
-                {/* White border */}
-                <div className="absolute inset-0 rounded-sm border-2 border-white/90" />
-                {/* Grid */}
+                <div className="absolute inset-0 rounded-sm border-2 border-white/90 shadow-[0_0_0_1px_rgba(0,0,0,0.1)]" />
                 <div className={`absolute inset-0 transition-opacity duration-300 ${showGrid ? 'opacity-100' : 'opacity-0'}`}>
                   <div className="grid h-full w-full grid-cols-3 grid-rows-3">
                     {Array.from({ length: 9 }).map((_, i) => (
@@ -708,65 +658,53 @@ export default function ImageEditorModal({
                     ))}
                   </div>
                 </div>
-                {/* Corner marks */}
                 <div className="absolute -left-px -top-px h-4 w-4 border-l-2 border-t-2 border-white" />
                 <div className="absolute -right-px -top-px h-4 w-4 border-r-2 border-t-2 border-white" />
                 <div className="absolute -bottom-px -left-px h-4 w-4 border-b-2 border-l-2 border-white" />
                 <div className="absolute -bottom-px -right-px h-4 w-4 border-b-2 border-r-2 border-white" />
               </div>
 
-              {/* Zoom indicator (temporary) */}
               <div className="pointer-events-none absolute left-4 top-4 z-20 rounded-full border border-white/20 bg-ink/40 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/80 backdrop-blur-sm">
-                {(activeImage.zoom || 1).toFixed(1)}×
+                {activeImage.zoom.toFixed(1)}×
               </div>
             </>
           ) : (
-            /* Empty State */
             <div className="flex flex-col items-center gap-4 px-6 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-full border border-beige/50 bg-paper text-pink-accent shadow-sm">
                 <Plus className="h-6 w-6" />
               </div>
               <p className="font-display text-lg font-semibold text-white/90">Add a photo to start</p>
-              <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-beige bg-paper px-6 text-sm font-semibold text-ink shadow-sm transition-colors hover:bg-beige/30"
+              >
                 Choose from library
-              </Button>
+              </button>
             </div>
           )}
         </div>
 
-        {/* ═══════ Bottom Toolbar ═══════ */}
         {activeImage && (
           <div className="shrink-0 border-t border-beige/40 bg-paper">
-            {/* Tool Row */}
             <div className="flex items-center justify-center gap-2 px-4 py-3 sm:gap-4">
-              {/* Aspect Ratio */}
-              <button
-                onClick={() => setActiveTool((t) => (t === 'ratio' ? null : 'ratio'))}
-                className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition-colors ${activeTool === 'ratio' ? 'bg-pink-accent/10 text-pink-accent' : 'text-ink-muted hover:bg-beige/30 hover:text-ink'}`}
-              >
-                <Frame className="h-5 w-5" />
-                <span className="text-[10px] font-semibold uppercase tracking-wider">Ratio</span>
-              </button>
-
-              {/* Zoom */}
               <button
                 onClick={() => setActiveTool((t) => (t === 'zoom' ? null : 'zoom'))}
-                className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition-colors ${activeTool === 'zoom' ? 'bg-pink-accent/10 text-pink-accent' : 'text-ink-muted hover:bg-beige/30 hover:text-ink'}`}
+                className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition-colors ${activeTool === 'zoom' ? 'bg-pink-accent/10 text-pink-accent' : 'text-ink-muted hover:bg-beige/30 hover:text-ink'
+                  }`}
               >
                 <ZoomIn className="h-5 w-5" />
                 <span className="text-[10px] font-semibold uppercase tracking-wider">Zoom</span>
               </button>
 
-              {/* Grid toggle */}
               <button
                 onClick={() => setShowGrid((v) => !v)}
-                className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition-colors ${showGrid ? 'bg-pink-accent/10 text-pink-accent' : 'text-ink-muted hover:bg-beige/30 hover:text-ink'}`}
+                className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition-colors ${showGrid ? 'bg-pink-accent/10 text-pink-accent' : 'text-ink-muted hover:bg-beige/30 hover:text-ink'
+                  }`}
               >
                 <Grid3x3 className="h-5 w-5" />
                 <span className="text-[10px] font-semibold uppercase tracking-wider">Grid</span>
               </button>
 
-              {/* Rotate */}
               <button
                 onClick={handleRotate}
                 className="flex flex-col items-center gap-1 rounded-xl px-4 py-2 text-ink-muted transition-colors hover:bg-beige/30 hover:text-ink"
@@ -775,7 +713,6 @@ export default function ImageEditorModal({
                 <span className="text-[10px] font-semibold uppercase tracking-wider">Rotate</span>
               </button>
 
-              {/* Reset */}
               <button
                 onClick={handleReset}
                 className="flex flex-col items-center gap-1 rounded-xl px-4 py-2 text-ink-muted transition-colors hover:bg-beige/30 hover:text-ink"
@@ -785,45 +722,6 @@ export default function ImageEditorModal({
               </button>
             </div>
 
-            {/* Expanded Ratio Selector */}
-            <AnimatePresence>
-              {activeTool === 'ratio' && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden border-t border-beige/30 bg-parchment/40"
-                >
-                  <div className="flex items-center gap-3 overflow-x-auto px-4 py-3 scrollbar-thin">
-                    {ASPECT_RATIOS.map((ratio) => {
-                      const isActive = activeImage.aspectId === ratio.id
-                      return (
-                        <button
-                          key={ratio.id}
-                          onClick={() => handleSetAspect(ratio.id)}
-                          className={`flex shrink-0 flex-col items-center gap-2 rounded-xl px-4 py-3 transition-all ${isActive
-                            ? 'bg-pink-accent/10 text-pink-accent ring-1 ring-pink-accent/30'
-                            : 'bg-white/50 text-ink-muted hover:bg-white hover:text-ink'
-                            }`}
-                        >
-                          {/* Visual frame icon */}
-                          <div
-                            className={`rounded border-2 ${isActive ? 'border-pink-accent' : 'border-current'}`}
-                            style={{
-                              width: ratio.id === '9:16' ? 14 : ratio.id === '16:9' ? 28 : ratio.id === '4:5' ? 18 : 22,
-                              height: ratio.id === '9:16' ? 28 : ratio.id === '16:9' ? 14 : ratio.id === '4:5' ? 22 : 22,
-                            }}
-                          />
-                          <span className="text-[10px] font-semibold uppercase tracking-wider">{ratio.label}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Expanded Zoom Slider */}
             <AnimatePresence>
               {activeTool === 'zoom' && (
                 <motion.div
@@ -849,7 +747,6 @@ export default function ImageEditorModal({
               )}
             </AnimatePresence>
 
-            {/* Filmstrip */}
             {images.length > 1 && (
               <div className="flex items-center gap-2 overflow-x-auto border-t border-beige/30 bg-paper/80 px-4 py-2.5 scrollbar-thin">
                 {images.map((img, idx) => (
@@ -883,7 +780,6 @@ export default function ImageEditorModal({
           </div>
         )}
 
-        {/* Hidden input */}
         <input
           ref={fileInputRef}
           type="file"
@@ -893,7 +789,6 @@ export default function ImageEditorModal({
           onChange={handleAddPhotos}
         />
 
-        {/* ═══════ Processing Overlay ═══════ */}
         <AnimatePresence>
           {isProcessing && (
             <motion.div
@@ -934,7 +829,6 @@ export default function ImageEditorModal({
           )}
         </AnimatePresence>
 
-        {/* ═══════ Preview / Confirm Overlay ═══════ */}
         <AnimatePresence>
           {showPreview && (
             <motion.div
@@ -963,7 +857,7 @@ export default function ImageEditorModal({
                   <div className="grid grid-cols-1 gap-4">
                     {previewUrls.map((p) => (
                       <div key={p.id} className="rounded-[18px] border border-beige/50 bg-white/60 p-2 shadow-sm">
-                        <div className="flex items-center justify-center overflow-hidden rounded-[14px] bg-paper-warm">
+                        <div className="flex items-center justify-center overflow-hidden rounded-[14px]" style={{ backgroundColor: BACKGROUND_COLOR }}>
                           <img src={p.dataUrl} alt="" className="max-h-64 w-full object-contain" loading="lazy" />
                         </div>
                         <div className="mt-2 flex items-center justify-between px-1">
@@ -980,12 +874,18 @@ export default function ImageEditorModal({
                 </div>
 
                 <footer className="flex flex-col-reverse gap-2 border-t border-beige/40 bg-white/50 px-5 py-3 sm:flex-row sm:justify-end">
-                  <Button variant="secondary" onClick={() => setShowPreview(false)} className="min-h-10">
+                  <button
+                    onClick={() => setShowPreview(false)}
+                    className="min-h-10 rounded-2xl border border-beige bg-paper px-5 text-sm font-semibold text-ink transition-colors hover:bg-beige/30"
+                  >
                     Back
-                  </Button>
-                  <Button onClick={handleConfirmSave} className="min-h-10">
+                  </button>
+                  <button
+                    onClick={handleConfirmSave}
+                    className="min-h-10 rounded-2xl bg-pink-accent px-5 text-sm font-semibold text-white shadow-md transition-colors hover:bg-pink-600"
+                  >
                     Confirm & Save
-                  </Button>
+                  </button>
                 </footer>
               </motion.div>
             </motion.div>

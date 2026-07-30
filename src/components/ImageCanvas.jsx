@@ -15,6 +15,7 @@ export default function ImageCanvas({
   const inputRef = useRef(null)
   const [dragOver, setDragOver] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false) // For single image editor
   const [editingFiles, setEditingFiles] = useState([])
   const [editIndex, setEditIndex] = useState(null) // If editing an existing single image
   const [validationError, setValidationError] = useState('')
@@ -180,6 +181,17 @@ export default function ImageCanvas({
           onSaveComplete={handleSaveComplete}
           defaultCropMode="free"
         />
+        <ImageEditorModal
+          isOpen={isOpen}
+          onClose={() => setIsOpen(false)}
+          initialFiles={[editingFiles]}
+          onSaveComplete={(dataUrls) => {
+            // dataUrls is an array of JPEG data URLs (one per image)
+            // Save or use them as needed
+          }}
+          aspectRatio={1} // pass 1 for square, 4/5 for portrait, 16/9 for landscape, etc.
+        />
+
       </div>
     )
   }
@@ -392,12 +404,11 @@ export default function ImageCanvas({
             onDragStart={(e) => handleDragStart(e, i)}
             onDragOver={(e) => handleDragOver(e, i)}
             onDrop={(e) => handleDropReorder(e, i)}
-            className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 group border shadow-sm transition-all cursor-move ${
-              draggedIdx === i ? 'border-pink-accent opacity-30 scale-95' : 'border-beige/40 hover:border-pink-accent/40'
-            }`}
+            className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 group border shadow-sm transition-all cursor-move ${draggedIdx === i ? 'border-pink-accent opacity-30 scale-95' : 'border-beige/40 hover:border-pink-accent/40'
+              }`}
           >
             <img src={src} alt="" className="w-full h-full object-cover" />
-            
+
             {/* Action overlay */}
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
