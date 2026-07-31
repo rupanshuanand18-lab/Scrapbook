@@ -4,9 +4,6 @@ import { useNavigate } from "react-router-dom";
 
 import TopBar from "../components/TopBar";
 import Photo from "../components/Photo";
-import VoiceRecorder from "../components/VoiceRecorder";
-import VideoRecorder from "../components/VideoRecorder";
-
 import PolaroidStack from "../components/PolaroidStack";
 
 export default function Capture() {
@@ -24,7 +21,6 @@ export default function Capture() {
   const [flash, setFlash] = useState(false);
 
   const [successMessage, setSuccessMessage] = useState("");
-
 
   const stopCamera = useCallback(() => {
     if (!streamRef.current) return;
@@ -63,8 +59,6 @@ export default function Capture() {
   }, [cameraFacing, stopCamera]);
 
   useEffect(() => {
-    // Camera startup synchronizes with browser media APIs and updates loading/error state.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     startCamera();
 
     return () => stopCamera();
@@ -112,57 +106,27 @@ export default function Capture() {
         flipCamera={flipCamera}
       />
 
-      {/* Bottom Controls */}
-      <div className="absolute bottom-10 left-0 right-0">
+      {/* Bottom Controls - Only Photo Button */}
+      <div className="absolute bottom-10 left-0 right-0 flex items-center justify-center">
+        <Photo
+          videoRef={videoRef}
+          flash={flash}
+          setFlash={setFlash}
+          setCapture={(image) => {
+            setPhotos((prev) => {
+              const updated = [
+                {
+                  id: crypto.randomUUID(),
+                  image,
+                  date: "Just Now",
+                },
+                ...prev,
+              ];
 
-        <motion.p
-          animate={{
-            opacity: [0.4, 1, 0.4],
+              return updated.slice(0, 2);
+            });
           }}
-          transition={{
-            repeat: Infinity,
-            duration: 2,
-          }}
-          className="mb-5 text-center text-sm text-white/70"
-        >
-          Hold 🎤 to record • Release to save
-        </motion.p>
-
-        <div className="flex items-center justify-center gap-10">
-
-          <VoiceRecorder
-            streamRef={streamRef}
-            stopCamera={stopCamera}
-            startCamera={startCamera}
-            showSuccess={showSuccess}
-          />
-
-          <Photo
-            videoRef={videoRef}
-            flash={flash}
-            setFlash={setFlash}
-            setCapture={(image) => {
-              setPhotos((prev) => {
-                const updated = [
-                  {
-                    id: crypto.randomUUID(),
-                    image,
-                    date: "Just Now",
-                  },
-                  ...prev,
-                ];
-
-                return updated.slice(0, 2);
-              });
-            }}
-          />
-          <VideoRecorder
-            streamRef={streamRef}
-            showSuccess={showSuccess}
-          />
-
-        </div>
-
+        />
       </div>
 
       {/* Photo Preview */}

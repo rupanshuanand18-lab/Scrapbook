@@ -22,7 +22,7 @@ export default function DesktopSidebar({
         onClick={onToggle}
         aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
         aria-expanded={open}
-        className="fixed left-4 top-4 z-[70] hidden h-12 w-12 items-center justify-center rounded-2xl border border-beige/60 bg-paper/90 text-ink shadow-[0_10px_30px_rgba(44,40,37,0.12)] backdrop-blur-md transition-all hover:border-pink-accent/35 hover:text-pink-accent md:flex"
+        className="fixed left-4 top-5.5 z-[70] hidden h-12 w-12 items-center justify-center rounded-2xl border border-beige/60 bg-paper/90 text-ink shadow-[0_10px_30px_rgba(44,40,37,0.12)] backdrop-blur-md transition-all hover:border-pink-accent/35 hover:text-pink-accent md:flex"
       >
         {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
