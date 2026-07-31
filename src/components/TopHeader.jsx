@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { BookOpen } from 'lucide-react'
+import { BookOpen, Menu } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 function getPageTitle(pathname, search) {
@@ -15,13 +15,13 @@ function getPageTitle(pathname, search) {
     const tab = new URLSearchParams(search).get('tab')
     return tab === 'Discover' ? 'Explore' : 'Community'
   }
-  if (pathname === '/edit-profile') return 'Profile'
+  if (pathname === '/profile') return 'Profile'
   if (pathname.startsWith('/books/') && pathname.endsWith('/timeline')) return 'Timeline'
   if (pathname.startsWith('/books/')) return 'Book'
   return ''
 }
 
-export default function TopHeader() {
+export default function TopHeader({ onMenuClick, sidebarOpen }) {
   const { user } = useApp()
   const location = useLocation()
 
@@ -34,20 +34,25 @@ export default function TopHeader() {
   return (
     <header className="fixed inset-x-3 top-3 z-50">
       <div className="glass-panel rounded-[1.5rem] border border-beige/55 shadow-[0_14px_34px_rgba(44,40,37,0.08)] backdrop-blur-xl">
-        <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-5 md:pl-20 md:pr-5">
-          <Link to={homeTo} className="flex items-center gap-3 min-w-0 group">
-            <motion.span
-              whileHover={{ rotate: 8, scale: 1.06 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-beige/60 bg-paper-warm text-pink-accent shadow-[0_6px_16px_rgba(44,40,37,0.06)]"
-            >
-              <BookOpen className="h-5 w-5" aria-hidden="true" />
-            </motion.span>
-            <span className="min-w-0 font-display text-xl sm:text-2xl font-semibold tracking-tight text-ink">
-              ScrapBook
-            </span>
-          </Link>
+        <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-5 md:pl-5 md:pr-5">
+          {/* Left side: Brand */}
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Brand */}
+            <Link to={homeTo} className="flex items-center gap-3 group">
+              <motion.span
+                whileHover={{ rotate: 8, scale: 1.06 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-beige/60 bg-paper-warm text-pink-accent shadow-[0_6px_16px_rgba(44,40,37,0.06)]"
+              >
+                <BookOpen className="h-5 w-5" aria-hidden="true" />
+              </motion.span>
+              <span className="min-w-0 font-display text-xl sm:text-2xl font-semibold tracking-tight text-ink">
+                ScrapBook
+              </span>
+            </Link>
+          </div>
 
+          {/* Page Title (desktop only) */}
           <div className="hidden lg:flex min-w-0 flex-1 justify-center">
             {pageTitle ? (
               <span className="max-w-[18rem] truncate text-[10px] font-semibold uppercase tracking-[0.24em] text-ink-muted">
@@ -56,11 +61,23 @@ export default function TopHeader() {
             ) : null}
           </div>
 
-          <div className="flex items-center justify-end min-w-[2.75rem] sm:min-w-[3rem]">
+          {/* Right side: Menu Button + User Avatar */}
+          <div className="flex items-center gap-3 justify-end min-w-[2.75rem] sm:min-w-[3rem]">
+            {/* Menu Button - Visible on both mobile AND desktop */}
+            <button
+              type="button"
+              onClick={onMenuClick}
+              aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={sidebarOpen}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-beige/60 bg-paper text-ink-muted transition-colors hover:border-pink-accent/35 hover:text-ink md:flex"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+
             {user ? (
               <Link
                 to="/edit-profile"
-                aria-label="Open profile"
+                aria-label="View profile"
                 className="group flex items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-pink-accent/40"
               >
                 <img

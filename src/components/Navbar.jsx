@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext'
 import TopHeader from './TopHeader'
 import DesktopSidebar from './navigation/DesktopSidebar'
 import MobileBottomNav from './navigation/MobileBottomNav'
+import MobileDrawer from './navigation/MobileDrawer'
 
 const NAV_SESSION_KEY = 'scrapbook-nav-open'
 
@@ -11,66 +12,103 @@ export default function Navbar() {
   const { user, logout } = useApp()
   const navigate = useNavigate()
   const location = useLocation()
-  const [menuOpen, setMenuOpen] = useState(() => {
+
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window === 'undefined') return false
     return window.sessionStorage.getItem(NAV_SESSION_KEY) === 'open'
   })
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const isAuthSurface = Boolean(user)
 
+  // Close sidebar on route change
   useEffect(() => {
-    window.sessionStorage.setItem(NAV_SESSION_KEY, menuOpen ? 'open' : 'closed')
-  }, [menuOpen])
+    setSidebarOpen(false)
+  }, [location.pathname])
+
+  // Close drawer on route change
+  useEffect(() => {
+    setDrawerOpen(false)
+  }, [location.pathname])
 
   useEffect(() => {
-    if (!menuOpen) return undefined
+    window.sessionStorage.setItem(NAV_SESSION_KEY, sidebarOpen ? 'open' : 'closed')
+  }, [sidebarOpen])
+
+  useEffect(() => {
+    if (!sidebarOpen && !drawerOpen) return undefined
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
-        setMenuOpen(false)
+        setSidebarOpen(false)
+        setDrawerOpen(false)
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [menuOpen])
+  }, [sidebarOpen, drawerOpen])
 
   useEffect(() => {
-    if (!menuOpen) return undefined
+    if (!sidebarOpen && !drawerOpen) return undefined
 
     const previous = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = previous
     }
-  }, [menuOpen])
+  }, [sidebarOpen, drawerOpen])
 
-  const closeMenu = () => setMenuOpen(false)
+  const closeSidebar = () => setSidebarOpen(false)
+  const closeDrawer = () => setDrawerOpen(false)
 
   const handleLogout = () => {
     logout()
     navigate('/')
-    closeMenu()
+    closeSidebar()
+    closeDrawer()
   }
 
   const handleNavigate = () => {
-    closeMenu()
+    closeSidebar()
+    closeDrawer()
+  }
+
+  const toggleSidebar = () => {
+    setSidebarOpen(prev => !prev)
+  }
+
+  const toggleDrawer = () => {
+    setDrawerOpen(prev => !prev)
   }
 
   return (
     <>
-      <TopHeader />
+      <TopHeader
+        onMenuClick={window.innerWidth >= 768 ? toggleSidebar : toggleDrawer}
+        sidebarOpen={sidebarOpen}
+      />
       {isAuthSurface ? (
         <>
           <DesktopSidebar
-            open={menuOpen}
-            onToggle={() => setMenuOpen((prev) => !prev)}
-            onClose={closeMenu}
+            open={sidebarOpen}
+            onClose={closeSidebar}
             onLogout={handleLogout}
             user={user}
             location={location}
           />
-          <MobileBottomNav location={location} onNavigate={handleNavigate} />
+          <MobileDrawer
+            open={drawerOpen}
+            onClose={closeDrawer}
+            onLogout={handleLogout}
+            user={user}
+            location={location}
+            onNavigate={handleNavigate}
+          />
+          <MobileBottomNav
+            location={location}
+            onNavigate={handleNavigate}
+          />
         </>
       ) : null}
     </>
