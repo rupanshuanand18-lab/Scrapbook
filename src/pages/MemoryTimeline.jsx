@@ -31,15 +31,12 @@ export default function MemoryTimeline() {
     )
   }
 
-  const filteredMemories = bookMemories.filter((m) => {
-    return selectedMood === 'all' || m.mood === selectedMood
-  })
 
   return (
     <div className="min-h-screen paper-texture">
       <Navbar />
 
-      <main className="max-w-4xl mx-auto px-5 sm:px-8 pt-28 pb-24">
+      <main className="max-w-4xl mx-auto px-5 sm:px-8 pt-28 pb-32 sm:pb-24">
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -74,45 +71,6 @@ export default function MemoryTimeline() {
             transition={{ delay: 0.15, duration: 0.5 }}
             className="flex flex-col items-center gap-3 mb-16 font-sans"
           >
-            <span className="text-[9px] uppercase font-semibold tracking-[0.2em] text-ink-muted flex items-center gap-1.5 mb-1">
-              <Smile className="w-3.5 h-3.5" /> Filter by feeling
-            </span>
-            <div className="flex flex-wrap items-center justify-center gap-2 bg-cream-dark/30 p-2 rounded-xl border border-beige/70">
-              <button
-                onClick={() => setSelectedMood('all')}
-                className={`
-                  px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-[0.12em] cursor-pointer transition-all duration-300
-                  ${selectedMood === 'all'
-                    ? 'bg-paper-warm text-ink shadow-sm border border-beige/60'
-                    : 'text-ink-muted hover:text-ink'
-                  }
-                `}
-              >
-                ✨ Every Moment
-              </button>
-              {moods.map((m) => {
-                const count = bookMemories.filter((mem) => mem.mood === m.id).length
-                if (count === 0) return null
-
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() => setSelectedMood(m.id)}
-                    className={`
-                      px-3.5 py-2 rounded-lg text-xs font-semibold uppercase tracking-[0.12em] cursor-pointer transition-all duration-300 flex items-center gap-1.5
-                      ${selectedMood === m.id
-                        ? 'bg-paper-warm text-ink shadow-sm border border-beige/60'
-                        : 'text-ink-muted hover:text-ink'
-                      }
-                    `}
-                  >
-                    <span>{m.emoji}</span>
-                    <span>{m.label}</span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-cream-dark/60 opacity-70 font-sans">{count}</span>
-                  </button>
-                )
-              })}
-            </div>
           </motion.div>
         )}
 
@@ -124,19 +82,13 @@ export default function MemoryTimeline() {
             actionLabel="Capture a Memory"
             onAction={() => setShowAddMemory(true)}
           />
-        ) : filteredMemories.length === 0 ? (
-          <div className="text-center py-20 scrapbook-card rounded-3xl border border-beige/40 flex flex-col items-center" style={{ rotate: '-0.3deg' }}>
-            <span className="text-4xl mb-5 select-none">🔍</span>
-            <p className="text-ink-muted text-sm sm:text-base font-medium font-sans">No moments match this feeling yet.</p>
-            <Button onClick={() => setSelectedMood('all')} variant="secondary" size="sm" className="mt-5">Show All Moments</Button>
-          </div>
         ) : (
           <div className="relative">
             <div className="absolute left-1/2 top-6 bottom-10 w-[2px] stitch-line hidden sm:block -translate-x-1/2 opacity-50" />
 
             <div className="space-y-2">
               <AnimatePresence mode="popLayout">
-                {filteredMemories.map((memory, i) => (
+                {bookMemories.map((memory, i) => (
                   <motion.div
                     key={memory.id}
                     initial={{ opacity: 0, scale: 0.96 }}

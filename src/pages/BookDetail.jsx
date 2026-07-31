@@ -114,63 +114,9 @@ export default function BookDetail() {
         </div>
       </section>
 
-      <main className="max-w-4xl mx-auto px-5 sm:px-8 py-16 grid md:grid-cols-12 gap-10 items-start">
+      <main className="max-w-4xl mx-auto px-5 sm:px-8 py-16 pb-32 md:pb-24 gap-10 items-start">
 
-        <div className="md:col-span-4 space-y-7">
-          <div className="scrapbook-card rounded-2xl p-6 border border-beige/40 space-y-4 font-sans" style={{ rotate: '-0.3deg' }}>
-            <h3 className="font-display font-semibold text-ink text-base pl-0.5">Cover Theme</h3>
-            <ThemeCard theme={theme} selected compact onClick={() => {}} />
-          </div>
-
-          {book.isShared && (
-            <div className="scrapbook-card rounded-2xl p-6 border border-beige/40 space-y-6 font-sans" style={{ rotate: '0.4deg' }}>
-              <div className="flex items-center justify-between border-b border-beige/30 pb-4">
-                <div>
-                  <h3 className="font-display font-semibold text-ink text-base leading-tight">Shared Story</h3>
-                  <p className="text-[9px] uppercase tracking-[0.15em] font-semibold text-ink-muted mt-1.5">Curated by {owner?.name.split(' ')[0]}</p>
-                </div>
-                <Button variant="outline" size="sm" className="h-7 text-[10px] px-2.5 rounded-lg">+ Invite</Button>
-              </div>
-
-              <div className="flex items-center gap-2.5">
-                <span className="text-[10px] uppercase font-semibold tracking-[0.12em] text-ink-muted">Together:</span>
-                <div className="flex -space-x-2.5 overflow-hidden">
-                  {collaborators.map((c) => (
-                    <img
-                      key={c.id}
-                      src={c.avatar}
-                      alt={c.name}
-                      title={c.name}
-                      className="inline-block w-8 h-8 rounded-full ring-2 ring-paper object-cover border border-beige/35 shadow-sm"
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-1">
-                <h4 className="font-display font-semibold text-ink text-sm">Shared Moments</h4>
-                <div className="space-y-4 relative pl-4 border-l border-beige/50">
-                  {activityFeed.slice(0, 3).map((item) => {
-                    const activityUser = getUserById(item.userId)
-                    return (
-                      <div key={item.id} className="text-xs relative">
-                        <div className="absolute -left-[21px] top-2 w-1.5 h-1.5 rounded-full bg-pink-accent/75 border-2 border-paper" />
-                        <p className="text-ink-muted leading-relaxed font-sans">
-                          <span className="font-semibold text-ink">{activityUser?.name.split(' ')[0]}</span>{' '}
-                          {item.action}{' '}
-                          <span className="font-medium text-ink italic">"{item.target.split(' ').slice(0, 2).join(' ')}..."</span>
-                        </p>
-                        <span className="font-handwritten text-sm text-brown-light/80 mt-1 block">{item.time}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="md:col-span-8 space-y-7">
+        <div className=" space-y-7">
           <div className="flex items-center justify-between border-b border-beige/35 pb-4">
             <h2 className="font-display text-2xl sm:text-3xl font-semibold text-ink leading-tight">Recent Pages</h2>
             <Link to={`/books/${bookId}/timeline`} className="text-[10px] font-semibold uppercase tracking-[0.15em] text-pink-accent hover:underline flex items-center gap-1 font-sans">

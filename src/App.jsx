@@ -9,21 +9,21 @@ import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
 import BookDetail from './pages/BookDetail'
 import MemoryTimeline from './pages/MemoryTimeline'
-import Capture from "./pages/Capture";
-import Welcome from "./pages/Welcome";
-import Community from "./pages/Community";
-import EditProfile from "./pages/EditProfile";
+import Capture from './pages/Capture'
+import Welcome from './pages/Welcome'
+import Community from './pages/Community'
+import EditProfile from './pages/EditProfile'
 import FollowersModal from './components/FollowersModal'
 import UserProfileModal from './components/UserProfileModal'
 import { useApp } from './context/AppContext'
 
 function AnimatedRoutes() {
   const location = useLocation()
-  const { 
-    activeFollowersModal, 
-    closeFollowersModal, 
-    activeUserProfileId, 
-    closeUserProfile 
+  const {
+    activeFollowersModal,
+    closeFollowersModal,
+    activeUserProfileId,
+    closeUserProfile,
   } = useApp()
 
   return (
@@ -63,7 +63,6 @@ function AnimatedRoutes() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/community"
             element={
@@ -88,7 +87,9 @@ function AnimatedRoutes() {
             path="/books/:bookId"
             element={
               <ProtectedRoute>
-                <PageTransition><BookDetail /></PageTransition>
+                <PageTransition>
+                  <BookDetail />
+                </PageTransition>
               </ProtectedRoute>
             }
           />
@@ -96,14 +97,15 @@ function AnimatedRoutes() {
             path="/books/:bookId/timeline"
             element={
               <ProtectedRoute>
-                <PageTransition><MemoryTimeline /></PageTransition>
+                <PageTransition>
+                  <MemoryTimeline />
+                </PageTransition>
               </ProtectedRoute>
             }
           />
         </Routes>
       </AnimatePresence>
 
-      {/* Global Modal Overlays */}
       <FollowersModal
         isOpen={!!activeFollowersModal}
         onClose={closeFollowersModal}
