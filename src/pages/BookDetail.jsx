@@ -7,6 +7,7 @@ import Button from '../components/ui/Button'
 import ThemeCard from '../components/ThemeCard'
 import AddMemoryModal from '../components/AddMemoryModal'
 import EditBookModal from '../components/EditBookModal'
+import CreateBookModal from '../components/CreateBookModal'
 import { useApp } from '../context/AppContext'
 import { getThemeById, getUserById, activityFeed } from '../data/mockData'
 

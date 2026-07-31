@@ -96,6 +96,11 @@ export default function ImageCanvas({
     setEditorOpen(true)
   }
 
+  // NEW FUNCTION: Direct trigger to open the profile picture single editor or general standard editor modal with specific aspect ratio
+  const handleOpenCustomEditor = () => {
+    setIsOpen(true)
+  }
+
   // Editor complete callback
   const handleSaveComplete = (processedUrls) => {
     if (editIndex !== null) {
@@ -173,7 +178,7 @@ export default function ImageCanvas({
           onChange={(e) => validateAndAddFiles(e.target.files)}
         />
 
-        {/* Editing Modal Portal */}
+        {/* Editing Modal Portals */}
         <ImageEditorModal
           isOpen={editorOpen}
           onClose={() => setEditorOpen(false)}
@@ -184,12 +189,14 @@ export default function ImageCanvas({
         <ImageEditorModal
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
-          initialFiles={[editingFiles]}
+          initialFiles={editingFiles}
           onSaveComplete={(dataUrls) => {
-            // dataUrls is an array of JPEG data URLs (one per image)
-            // Save or use them as needed
+            const firstImage = dataUrls[0]
+            console.log('Final image data URL:', firstImage)
+            onImagesChange([firstImage])
+            setIsOpen(false)
           }}
-          aspectRatio={1} // pass 1 for square, 4/5 for portrait, 16/9 for landscape, etc.
+          aspectRatio={1} // Square crop configuration for profile picture
         />
 
       </div>

@@ -32,23 +32,9 @@ export const desktopNavItems = [
     match: (pathname) => pathname === '/capture',
     highlight: true,
   },
-  {
-    key: 'profile',
-    label: 'Profile',
-    to: '/edit-profile',
-    icon: UserRound,
-    match: (pathname) => pathname === '/edit-profile',
-  },
 ]
 
 export const mobileNavItems = [
-  {
-    key: 'home',
-    label: 'Home',
-    to: '/dashboard',
-    icon: Home,
-    match: (pathname) => pathname === '/dashboard' || pathname.startsWith('/books/'),
-  },
   {
     key: 'community',
     label: 'Community',
@@ -65,11 +51,11 @@ export const mobileNavItems = [
     highlight: true,
   },
   {
-    key: 'profile',
-    label: 'Profile',
-    to: '/edit-profile',
-    icon: UserRound,
-    match: (pathname) => pathname === '/edit-profile',
+    key: 'home',
+    label: 'Home',
+    to: '/dashboard',
+    icon: Home,
+    match: (pathname) => pathname === '/dashboard' || pathname.startsWith('/books/'),
   },
 ]
 

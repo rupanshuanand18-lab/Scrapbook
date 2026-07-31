@@ -26,11 +26,10 @@ export default function NavItem({
       <motion.span
         whileHover={{ scale: 1.04, y: -1 }}
         whileTap={{ scale: 0.96 }}
-        className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-xl border transition-all ${
-          active
-            ? 'border-pink-accent/25 bg-pink-accent/10 text-pink-accent'
-            : 'border-transparent bg-cream-dark/35 text-ink-muted group-hover:bg-cream-dark/60 group-hover:text-ink'
-        }`}
+        className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-xl border transition-all ${active
+          ? 'border-pink-accent/25 bg-pink-accent/10 text-pink-accent'
+          : 'border-transparent bg-cream-dark/35 text-ink-muted group-hover:bg-cream-dark/60 group-hover:text-ink'
+          }`}
       >
         <Icon className="h-4 w-4" aria-hidden="true" />
       </motion.span>
