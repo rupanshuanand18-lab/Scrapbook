@@ -5,6 +5,7 @@ const variants = {
   secondary: 'bg-paper-warm text-ink border border-beige/80 hover:bg-cream-dark/50 shadow-[0_1px_0_rgba(221,208,192,0.6),0_4px_12px_rgba(44,40,37,0.06)] focus-visible:ring-2 focus-visible:ring-beige outline-none',
   ghost: 'bg-transparent text-ink-muted hover:text-ink hover:bg-cream-dark/40 focus-visible:ring-2 focus-visible:ring-cream-dark outline-none',
   outline: 'bg-transparent border border-pink-accent/60 text-pink-accent hover:bg-pink-accent/8 focus-visible:ring-2 focus-visible:ring-pink-accent/25 outline-none',
+  destructive: 'bg-red-500 text-white shadow-[0_2px_0_rgba(180,0,0,0.15),0_6px_16px_rgba(220,38,38,0.3)] hover:shadow-[0_3px_0_rgba(180,0,0,0.18),0_10px_24px_rgba(220,38,38,0.38)] hover:bg-red-600 focus-visible:ring-2 focus-visible:ring-red-500/40 outline-none border border-red-500/25',
 }
 
 const sizes = {
