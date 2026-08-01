@@ -531,9 +531,9 @@ export default function ImageEditorModal({
   let frameW = 300
   let frameH = 300
   let baseScale = 1
-  
-  // Use callback ref pattern to avoid accessing ref during render
-  const calculateFrameDimensions = useCallback(() => {
+
+  // convert to a regular function, called directly during render
+  const calculateFrameDimensions = () => {
     if (viewportRef.current && activeImage) {
       const rect = viewportRef.current.getBoundingClientRect()
       const size = getFrameSize(rect.width - 32, rect.height - 32)
@@ -550,8 +550,11 @@ export default function ImageEditorModal({
         baseScale = getBaseScale(activeImage, frameW, frameH)
       }
     }
-  }, [activeImage, aspectRatio])
-  
+  }
+
+  // now the early return is safe
+  if (!isOpen) return null
+
   calculateFrameDimensions()
 
   return (
