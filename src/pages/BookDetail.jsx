@@ -4,13 +4,11 @@ import { motion } from 'framer-motion'
 import { Calendar, Edit3, Eye, Plus, Palette, Trash2, Pencil } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Button from '../components/ui/Button'
-import ThemeCard from '../components/ThemeCard'
 import AddMemoryModal from '../components/AddMemoryModal'
 import EditMemoryModal from '../components/EditMemoryModal'
 import EditBookModal from '../components/EditBookModal'
-import CreateBookModal from '../components/CreateBookModal'
 import { useApp } from '../context/AppContext'
-import { getThemeById, getUserById, activityFeed } from '../data/mockData'
+import { getThemeById, getUserById } from '../data/mockData'
 
 export default function BookDetail() {
   const { bookId } = useParams()
@@ -65,6 +63,10 @@ export default function BookDetail() {
   const owner = getUserById(book.ownerId)
   const collaborators = book.collaboratorIds.map(getUserById).filter(Boolean)
   const bookMemories = getBookMemories(bookId)
+
+  // Remove unused variables warning - they may be used in future features
+  void owner
+  void collaborators
 
   return (
     <div className="min-h-screen paper-texture">
