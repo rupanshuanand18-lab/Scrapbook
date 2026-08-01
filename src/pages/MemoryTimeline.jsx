@@ -126,31 +126,12 @@ export default function MemoryTimeline() {
                     layout
                     className="group relative"
                   >
-                    <MemoryCard memory={memory} index={i} />
-                    
-                    {/* Edit/Delete buttons on hover */}
-                    <div className="absolute top-4 right-4 z-30 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 sm:hidden">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleEditMemory(memory)
-                        }}
-                        className="p-2 bg-paper/90 hover:bg-pink-accent/90 rounded-full shadow-md backdrop-blur-sm transition-colors"
-                        title="Edit memory"
-                      >
-                        <Pencil className="w-4 h-4 text-ink" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteMemory(memory)
-                        }}
-                        className="p-2 bg-paper/90 hover:bg-red-500/90 rounded-full shadow-md backdrop-blur-sm transition-colors"
-                        title="Delete memory"
-                      >
-                        <Trash2 className="w-4 h-4 text-ink" />
-                      </button>
-                    </div>
+                    <MemoryCard 
+                      memory={memory} 
+                      index={i}
+                      onEdit={() => handleEditMemory(memory)}
+                      onDelete={() => handleDeleteMemory(memory)}
+                    />
                   </motion.div>
                 ))}
               </AnimatePresence>
