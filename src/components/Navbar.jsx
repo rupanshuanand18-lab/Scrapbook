@@ -23,12 +23,14 @@ export default function Navbar() {
 
   // Close sidebar on route change
   useEffect(() => {
-    setSidebarOpen(false)
+    const cleanup = () => setSidebarOpen(false)
+    cleanup()
   }, [location.pathname])
 
   // Close drawer on route change
   useEffect(() => {
-    setDrawerOpen(false)
+    const cleanup = () => setDrawerOpen(false)
+    cleanup()
   }, [location.pathname])
 
   useEffect(() => {

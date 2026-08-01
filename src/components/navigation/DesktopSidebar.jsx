@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { LogOut } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import NavItem from './NavItem'
-import { desktopNavItems, sidebarAccentIcon, sidebarBrandIcon } from './navConfig'
+import { desktopNavItems, sidebarBrandIcon } from './navConfig'
 
 export default function DesktopSidebar({
   open,
@@ -12,7 +12,6 @@ export default function DesktopSidebar({
   location,
 }) {
   const BrandIcon = sidebarBrandIcon
-  const AccentIcon = sidebarAccentIcon
 
   return (
     <AnimatePresence>

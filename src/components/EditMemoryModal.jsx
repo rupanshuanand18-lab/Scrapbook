@@ -12,15 +12,23 @@ export default function EditMemoryModal({ isOpen, onClose, onSave, memory }) {
   const [description, setDescription] = useState('')
   const [images, setImages] = useState([])
 
+  // Reset form when modal opens with a memory
   useEffect(() => {
-    if (memory) {
+    if (isOpen && memory) {
       setTitle(memory.title || '')
       setDate(memory.date || new Date().toISOString().split('T')[0])
       setMood(memory.mood || 'happy')
       setDescription(memory.description || '')
       setImages(memory.images || [])
+    } else if (isOpen && !memory) {
+      // Reset for new memory
+      setTitle('')
+      setDate(new Date().toISOString().split('T')[0])
+      setMood('happy')
+      setDescription('')
+      setImages([])
     }
-  }, [memory])
+  }, [isOpen, memory])
 
   const reset = () => {
     setTitle('')
