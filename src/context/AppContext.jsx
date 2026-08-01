@@ -141,6 +141,23 @@ export function AppProvider({ children }) {
     return newMemory
   }, [])
 
+  const updateMemory = useCallback((memoryId, updates) => {
+    setMemories((prev) =>
+      prev.map((m) => (m.id === memoryId ? { ...m, ...updates } : m))
+    )
+  }, [])
+
+  const deleteMemory = useCallback((memoryId, bookId) => {
+    setMemories((prev) => prev.filter((m) => m.id !== memoryId))
+    if (bookId) {
+      setBooks((prev) =>
+        prev.map((b) =>
+          b.id === bookId ? { ...b, memoryCount: Math.max(0, b.memoryCount - 1) } : b
+        )
+      )
+    }
+  }, [])
+
   const getBookMemories = useCallback(
     (bookId) => memories.filter((m) => m.bookId === bookId),
     [memories]
@@ -169,6 +186,8 @@ export function AppProvider({ children }) {
         memories,
         addBook,
         addMemory,
+        updateMemory,
+        deleteMemory,
         getBookMemories,
         updateBook,
         deleteBook,

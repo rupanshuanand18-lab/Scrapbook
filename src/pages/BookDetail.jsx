@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Calendar, Edit3, Eye, Plus, Palette } from 'lucide-react'
+import { Calendar, Edit3, Eye, Plus, Palette, Trash2, Pencil } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Button from '../components/ui/Button'
 import ThemeCard from '../components/ThemeCard'
 import AddMemoryModal from '../components/AddMemoryModal'
+import EditMemoryModal from '../components/EditMemoryModal'
 import EditBookModal from '../components/EditBookModal'
 import CreateBookModal from '../components/CreateBookModal'
 import { useApp } from '../context/AppContext'
@@ -14,9 +15,38 @@ import { getThemeById, getUserById, activityFeed } from '../data/mockData'
 export default function BookDetail() {
   const { bookId } = useParams()
   const navigate = useNavigate()
-  const { books, addMemory, getBookMemories } = useApp()
+  const { books, addMemory, getBookMemories, updateMemory, deleteMemory } = useApp()
   const [showAddMemory, setShowAddMemory] = useState(false)
   const [showEditBook, setShowEditBook] = useState(false)
+  const [showEditMemory, setShowEditMemory] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [selectedMemory, setSelectedMemory] = useState(null)
+
+  const handleEditMemory = (memory) => {
+    setSelectedMemory(memory)
+    setShowEditMemory(true)
+  }
+
+  const handleDeleteMemory = (memory) => {
+    setSelectedMemory(memory)
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDeleteMemory = () => {
+    if (selectedMemory) {
+      deleteMemory(selectedMemory.id, bookId)
+      setShowDeleteConfirm(false)
+      setSelectedMemory(null)
+    }
+  }
+
+  const handleUpdateMemory = (updates) => {
+    if (selectedMemory) {
+      updateMemory(selectedMemory.id, updates)
+      setShowEditMemory(false)
+      setSelectedMemory(null)
+    }
+  }
 
   const book = books.find((b) => b.id === bookId)
 
@@ -144,10 +174,34 @@ export default function BookDetail() {
                     viewport={{ once: true }}
                     transition={{ delay: index * 0.1, duration: 0.5 }}
                     whileHover={{ y: -8, rotate: rotation * 0.4, scale: 1.012 }}
-                    className="polaroid-frame p-3.5 pb-9 rounded-sm relative overflow-hidden"
+                    className="polaroid-frame p-3.5 pb-9 rounded-sm relative overflow-hidden group"
                     style={{ rotate: `${rotation}deg` }}
                   >
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-4.5 washi-tape pointer-events-none opacity-85 z-20 rotate-[1deg]" />
+
+                    {/* Edit/Delete buttons on hover */}
+                    <div className="absolute top-2 right-2 z-30 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEditMemory(memory)
+                        }}
+                        className="p-2 bg-paper/90 hover:bg-pink-accent/90 rounded-full shadow-md backdrop-blur-sm transition-colors"
+                        title="Edit memory"
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-ink" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteMemory(memory)
+                        }}
+                        className="p-2 bg-paper/90 hover:bg-red-500/90 rounded-full shadow-md backdrop-blur-sm transition-colors"
+                        title="Delete memory"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-ink" />
+                      </button>
+                    </div>
 
                     {memory.images?.[0] && (
                       <div className="aspect-square overflow-hidden rounded-xs border border-beige/30">
@@ -180,6 +234,54 @@ export default function BookDetail() {
         onSave={addMemory}
         bookId={bookId}
       />
+
+      <EditMemoryModal
+        isOpen={showEditMemory}
+        onClose={() => {
+          setShowEditMemory(false)
+          setSelectedMemory(null)
+        }}
+        onSave={handleUpdateMemory}
+        memory={selectedMemory}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="scrapbook-card rounded-[24px] p-8 max-w-md w-full bg-paper shadow-2xl"
+          >
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                <Trash2 className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="font-display text-2xl font-semibold text-ink mb-2">Delete Memory?</h3>
+              <p className="text-ink-muted text-sm">
+                Are you sure you want to delete "{selectedMemory?.title}"? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 justify-center">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowDeleteConfirm(false)
+                  setSelectedMemory(null)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDeleteMemory}
+              >
+                Delete Memory
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       <EditBookModal
         isOpen={showEditBook}
