@@ -31,6 +31,9 @@ export default function TopHeader({ onMenuClick, sidebarOpen }) {
     [location.pathname, location.search],
   )
 
+  // Check if we're on the landing page (unauthenticated user on home page)
+  const isLandingPage = !user && location.pathname === '/'
+
   return (
     <header className="fixed inset-x-3 top-3 z-50">
       <div className="glass-panel rounded-[1.5rem] border border-beige/55 shadow-[0_14px_34px_rgba(44,40,37,0.08)] backdrop-blur-xl">
@@ -61,33 +64,54 @@ export default function TopHeader({ onMenuClick, sidebarOpen }) {
             ) : null}
           </div>
 
-          {/* Right side: Menu Button + User Avatar */}
+          {/* Right side: Conditional rendering based on auth state */}
           <div className="flex items-center gap-3 justify-end min-w-[2.75rem] sm:min-w-[3rem]">
-            {/* Menu Button - Visible on both mobile AND desktop */}
-            <button
-              type="button"
-              onClick={onMenuClick}
-              aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
-              aria-expanded={sidebarOpen}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-beige/60 bg-paper text-ink-muted transition-colors hover:border-pink-accent/35 hover:text-ink md:flex"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-
-            {user ? (
-              <Link
-                to="/edit-profile"
-                aria-label="View profile"
-                className="group flex items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-pink-accent/40"
-              >
-                <img
-                  src={user.avatar}
-                  alt={user.name}
-                  className="h-10 w-10 rounded-full border border-beige/60 object-cover shadow-[0_4px_12px_rgba(44,40,37,0.08)] transition-transform duration-300 group-hover:scale-105"
-                />
-              </Link>
+            {isLandingPage ? (
+              // Landing page: Show Sign In and Sign Up buttons
+              <>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-ink-muted hover:text-ink transition-colors rounded-lg"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/signup"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium bg-pink-accent text-white rounded-lg hover:bg-pink-accent/90 transition-colors shadow-[0_4px_12px_rgba(44,40,37,0.1)]"
+                >
+                  Sign up
+                </Link>
+              </>
             ) : (
-              <span aria-hidden="true" className="h-10 w-10 rounded-full border border-transparent" />
+              // Other pages: Show Menu Button + User Avatar (if authenticated)
+              <>
+                {/* Menu Button - Visible on both mobile AND desktop */}
+                <button
+                  type="button"
+                  onClick={onMenuClick}
+                  aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                  aria-expanded={sidebarOpen}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-beige/60 bg-paper text-ink-muted transition-colors hover:border-pink-accent/35 hover:text-ink md:flex"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+
+                {user ? (
+                  <Link
+                    to="/edit-profile"
+                    aria-label="View profile"
+                    className="group flex items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-pink-accent/40"
+                  >
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      className="h-10 w-10 rounded-full border border-beige/60 object-cover shadow-[0_4px_12px_rgba(44,40,37,0.08)] transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </Link>
+                ) : (
+                  <span aria-hidden="true" className="h-10 w-10 rounded-full border border-transparent" />
+                )}
+              </>
             )}
           </div>
         </div>
