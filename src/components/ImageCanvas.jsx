@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Upload, Trash2, Plus, Camera, ImagePlus, Crop, AlertCircle } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import ImageEditorModal from './ImageEditorModal'
 
 export default function ImageCanvas({
@@ -11,12 +10,9 @@ export default function ImageCanvas({
   aspect = '4/3',
   emptyLabel = 'Drop your photo here',
   emptyHint = 'or click to browse',
-  variant = 'polaroid', // 'polaroid' | 'avatar' | 'cover' | 'default'
-  showCaptureButton = false,
-  onCaptureComplete
+  variant = 'polaroid' // 'polaroid' | 'avatar' | 'cover' | 'default'
 }) {
   const inputRef = useRef(null)
-  const navigate = useNavigate()
   const [dragOver, setDragOver] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
   const [isOpen, setIsOpen] = useState(false) // For single image editor
@@ -309,22 +305,6 @@ export default function ImageCanvas({
             <p className="font-display text-lg font-semibold text-ink">{emptyLabel}</p>
             <p className="text-xs text-ink-muted mt-1.5 leading-relaxed">{emptyHint}</p>
           </div>
-          
-          {/* Capture Button */}
-          {showCaptureButton && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                navigate('/capture', { state: { onCaptureComplete } })
-              }}
-              className="mt-3 flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-br from-pink-accent to-pink-600 text-white text-xs font-semibold uppercase tracking-wider shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95"
-            >
-              <Camera className="w-4 h-4" />
-              <span>Capture Photo</span>
-            </button>
-          )}
-          
           <input
             ref={inputRef}
             type="file"

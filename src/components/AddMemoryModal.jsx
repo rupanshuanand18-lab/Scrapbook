@@ -61,10 +61,6 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, bookId }) {
             images={images}
             onImagesChange={setImages}
             multiple
-            showCaptureButton={true}
-            onCaptureComplete={(capturedImages) => {
-              setImages(capturedImages)
-            }}
             emptyLabel="Drop your polaroid here"
             emptyHint="A photo that holds the feeling of this moment"
           />
