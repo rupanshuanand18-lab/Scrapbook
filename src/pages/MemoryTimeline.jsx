@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Plus, Calendar, Smile, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Plus, Calendar, Trash2 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import MemoryCard from '../components/MemoryCard'
 import Button from '../components/ui/Button'
@@ -9,7 +9,6 @@ import EmptyState from '../components/ui/EmptyState'
 import AddMemoryModal from '../components/AddMemoryModal'
 import EditMemoryModal from '../components/EditMemoryModal'
 import { useApp } from '../context/AppContext'
-import { moods } from '../data/mockData'
 
 export default function MemoryTimeline() {
   const { bookId } = useParams()
@@ -19,7 +18,6 @@ export default function MemoryTimeline() {
   const [showEditMemory, setShowEditMemory] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [selectedMemory, setSelectedMemory] = useState(null)
-  const [selectedMood, setSelectedMood] = useState('all')
 
   const book = books.find((b) => b.id === bookId)
   const bookMemories = getBookMemories(bookId)
