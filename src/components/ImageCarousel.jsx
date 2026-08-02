@@ -1,3 +1,4 @@
+// File: ImageCarousel.jsx
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -11,10 +12,13 @@ export default function ImageCarousel({
     showDots = false,
     counterPosition = 'bottom-right',
     arrowVariant = 'modern',
+    autoplay = false,
+    autoplayInterval = 4000,
 }) {
     const [currentIndex, setCurrentIndex] = useState(0)
     const [direction, setDirection] = useState(0)
     const [touchStart, setTouchStart] = useState(null)
+    const [isPaused, setIsPaused] = useState(false)
 
     if (!images || images.length === 0) return null
 
@@ -90,7 +94,11 @@ export default function ImageCarousel({
             : 'absolute top-2 right-2 px-2.5 py-1 rounded-full bg-ink/55 text-paper text-[10px] font-bold tracking-wide backdrop-blur-sm shadow-sm z-20'
 
     return (
-        <div className={`relative group ${className}`}>
+        <div
+            className={`relative group ${className}`}
+            onMouseEnter={() => autoplay && setIsPaused(true)}
+            onMouseLeave={() => autoplay && setIsPaused(false)}
+        >
             <div
                 className={`relative ${aspectClass} w-full overflow-hidden ${rounded} bg-cream-dark/25`}
                 onTouchStart={handleTouchStart}

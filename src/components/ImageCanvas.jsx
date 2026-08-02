@@ -542,7 +542,7 @@ export default function ImageCanvas({
             </button>
             <button
               type="button"
-              onClick={() => setCameraOpen(true)}
+              onClick={(e) => setCameraOpen(true)}
               className="w-8 h-8 rounded-full bg-paper/95 text-ink flex items-center justify-center cursor-pointer hover:bg-pink-accent hover:text-white transition-all shadow-card"
               title="Capture Photo"
             >
@@ -618,7 +618,7 @@ export default function ImageCanvas({
           </button>
           <button
             type="button"
-            onClick={() => setCameraOpen(true)}
+            onClick={(e) => setCameraOpen(true)}
             className="w-8 h-8 rounded-full bg-paper/95 text-ink flex items-center justify-center cursor-pointer hover:bg-pink-accent hover:text-white transition-all shadow-card"
             title="Capture Photo"
           >

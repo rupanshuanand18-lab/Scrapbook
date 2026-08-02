@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Check,
+  ChevronLeft,
   Globe2,
   Loader2,
   Lock,
   Save,
+  X,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'

@@ -185,6 +185,10 @@ export default function ImageEditorModal({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
+      setError('')
+      setActiveTool(null)
+      setShowPreview(false)
+      setIsProcessing(false)
     } else {
       document.body.style.overflow = ''
     }
@@ -193,11 +197,6 @@ export default function ImageEditorModal({
   // Initialize images when modal opens with files
   useEffect(() => {
     if (!isOpen) return
-    setError('')
-    setActiveTool(null)
-    setShowPreview(false)
-    setIsProcessing(false)
-    
     if (!initialFiles || initialFiles.length === 0) {
       setImages([])
       setActiveIndex(0)
@@ -227,7 +226,7 @@ export default function ImageEditorModal({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [isOpen, activeImage, activeTool, showPreview, onClose, handleRotateCurrent])
+  }, [isOpen, activeImage, activeTool, showPreview, onClose])
 
   const handleImageLoad = (e) => {
     const { naturalWidth, naturalHeight } = e.target
@@ -278,7 +277,7 @@ export default function ImageEditorModal({
     g.initialPanX = activeImage.panX
     g.initialPanY = activeImage.panY
     g.initialZoom = activeImage.zoom
-    try { e.target.setPointerCapture(e.pointerId) } catch {}
+    try { e.target.setPointerCapture(e.pointerId) } catch (_) { }
     setShowGrid(true)
   }
 
@@ -303,7 +302,7 @@ export default function ImageEditorModal({
     const g = gestureRef.current
     if (!g.active) return
     g.active = false
-    try { e.target.releasePointerCapture(e.pointerId) } catch {}
+    try { e.target.releasePointerCapture(e.pointerId) } catch (_) { }
     const transform = imageRef.current?.style.transform || ''
     const tMatch = transform.match(/translate\(([^p]+)px,\s*([^p]+)px\)/)
     const sMatch = transform.match(/scale\(([^)]+)\)/)
@@ -311,6 +310,7 @@ export default function ImageEditorModal({
       x: tMatch ? parseFloat(tMatch[1]) : activeImage.panX,
       y: tMatch ? parseFloat(tMatch[2]) : activeImage.panY,
     }
+    const finalZoom = sMatch ? parseFloat(sMatch[1]) / getBaseScale(activeImage, frameW, frameH) : activeImage.zoom // not perfect but we commit the zoom from state
     const clamped = clampPan(finalPan.x, finalPan.y, activeImage.zoom, activeImage.rotate)
     commitToActive({ panX: clamped.x, panY: clamped.y })
     setShowGrid(false)
