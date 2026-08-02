@@ -1,3 +1,4 @@
+// File: ImageCanvas.jsx
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
@@ -5,8 +6,9 @@ import {
   X, RotateCw
 } from 'lucide-react'
 import ImageEditorModal from './ImageEditorModal'
+import ImageCarousel from './ImageCarousel'
 
-// --- Camera Capture Modal (inline) ---
+// --- Camera Capture Modal (unchanged) ---
 function CameraCaptureModal({ isOpen, onClose, onCapture }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
@@ -18,7 +20,7 @@ function CameraCaptureModal({ isOpen, onClose, onCapture }) {
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current.getTracks().forEach((track) => track.stop())
       streamRef.current = null
     }
   }, [])
@@ -46,16 +48,13 @@ function CameraCaptureModal({ isOpen, onClose, onCapture }) {
   }, [facingMode, stopCamera])
 
   useEffect(() => {
-    if (isOpen) {
-      startCamera()
-    } else {
-      stopCamera()
-    }
+    if (isOpen) startCamera()
+    else stopCamera()
     return () => stopCamera()
   }, [isOpen, startCamera, stopCamera])
 
   const flipCamera = () => {
-    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment')
+    setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'))
   }
 
   const capture = () => {
@@ -89,13 +88,7 @@ function CameraCaptureModal({ isOpen, onClose, onCapture }) {
               {error}
             </div>
           )}
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className="h-full w-full object-cover"
-          />
+          <video ref={videoRef} autoPlay muted playsInline className="h-full w-full object-cover" />
           {flash && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -140,7 +133,7 @@ export default function ImageCanvas({
   aspect = '4/3',
   emptyLabel = 'Drop your photo here',
   emptyHint = 'or click to browse',
-  variant = 'polaroid' // 'polaroid' | 'avatar' | 'cover' | 'default'
+  variant = 'polaroid',
 }) {
   const inputRef = useRef(null)
   const [dragOver, setDragOver] = useState(false)
@@ -150,23 +143,19 @@ export default function ImageCanvas({
   const [validationError, setValidationError] = useState('')
   const [cameraOpen, setCameraOpen] = useState(false)
 
-  // Determine crop aspect ratio based on variant
   let cropAspectRatio = undefined
   if (variant === 'avatar') cropAspectRatio = 1
   else if (variant === 'cover') cropAspectRatio = 3 / 1
   else if (aspect === '3/4') cropAspectRatio = 3 / 4
   else if (aspect === '3/1') cropAspectRatio = 3 / 1
   else if (aspect === '4/3') cropAspectRatio = 4 / 3
-  // if aspect is something else, we leave undefined (free crop)
 
-  // Handle selected files
   const validateAndAddFiles = (files) => {
     setValidationError('')
     const imageFiles = Array.from(files)
     const validTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/webp']
     const rejectedFiles = []
     const acceptedFiles = []
-
     for (let f of imageFiles) {
       if (!validTypes.includes(f.type)) {
         rejectedFiles.push(f.name)
@@ -178,14 +167,13 @@ export default function ImageCanvas({
       }
       acceptedFiles.push(f)
     }
-
     if (rejectedFiles.length > 0) {
-      setValidationError(`Unsupported file type(s): ${rejectedFiles.join(', ')}. Use PNG, JPG, or WEBP.`)
+      setValidationError(
+        `Unsupported file type(s): ${rejectedFiles.join(', ')}. Use PNG, JPG, or WEBP.`
+      )
       return
     }
-
     if (acceptedFiles.length === 0) return
-
     setEditingFiles(acceptedFiles)
     setEditIndex(null)
     setEditorOpen(true)
@@ -202,23 +190,16 @@ export default function ImageCanvas({
     onImagesChange(images.filter((_, i) => i !== index))
   }
 
-  // Drag and drop reordering
   const [draggedIdx, setDraggedIdx] = useState(null)
-
   const handleDragStart = (e, index) => {
     setDraggedIdx(index)
     e.dataTransfer.setData('text/plain', index)
   }
-
-  const handleDragOver = (e) => {
-    e.preventDefault()
-  }
-
+  const handleDragOver = (e) => e.preventDefault()
   const handleDropReorder = (e, targetIdx) => {
     e.preventDefault()
     const fromIdx = parseInt(e.dataTransfer.getData('text/plain'))
     if (isNaN(fromIdx) || fromIdx === targetIdx) return
-
     const reordered = [...images]
     const [moved] = reordered.splice(fromIdx, 1)
     reordered.splice(targetIdx, 0, moved)
@@ -226,7 +207,6 @@ export default function ImageCanvas({
     setDraggedIdx(null)
   }
 
-  // Edit existing image
   const handleEditExisting = (index, e) => {
     e.stopPropagation()
     setEditingFiles([images[index]])
@@ -234,7 +214,6 @@ export default function ImageCanvas({
     setEditorOpen(true)
   }
 
-  // Editor complete callback
   const handleSaveComplete = (processedUrls) => {
     if (editIndex !== null) {
       const updated = [...images]
@@ -245,24 +224,26 @@ export default function ImageCanvas({
     }
   }
 
-  // Camera capture handler
   const handleCameraCapture = (dataUrl) => {
     setCameraOpen(false)
-    // Treat captured image as a file for editing
     setEditingFiles([dataUrl])
     setEditIndex(null)
     setEditorOpen(true)
   }
 
-  // Helper to open file input
   const openFileInput = (e) => {
     e.stopPropagation()
     inputRef.current?.click()
   }
 
-  const aspectClass = aspect === '3/4' ? 'aspect-[3/4.2]' : aspect === '3/1' ? 'aspect-[3/1]' : 'aspect-[4/3]'
+  const aspectClass =
+    aspect === '3/4'
+      ? 'aspect-[3/4.2]'
+      : aspect === '3/1'
+        ? 'aspect-[3/1]'
+        : 'aspect-[4/3]'
 
-  // ---- Render variants ----
+  // ---- Avatar variant ----
   if (variant === 'avatar') {
     const avatarUrl = images[0]
     return (
@@ -273,14 +254,17 @@ export default function ImageCanvas({
           </p>
         )}
         <div
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOver(true)
+          }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => inputRef.current?.click()}
-          className={`
-            relative h-32 w-32 rounded-full border-4 bg-cream-dark shadow-xl cursor-pointer overflow-hidden transition-all duration-300
-            ${dragOver ? 'border-pink-accent scale-105 ring-4 ring-pink-accent/20' : 'border-paper group-hover:border-pink-accent/30'}
-          `}
+          className={`relative h-32 w-32 rounded-full border-4 bg-cream-dark shadow-xl cursor-pointer overflow-hidden transition-all duration-300 ${dragOver
+            ? 'border-pink-accent scale-105 ring-4 ring-pink-accent/20'
+            : 'border-paper group-hover:border-pink-accent/30'
+            }`}
         >
           {avatarUrl ? (
             <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
@@ -289,7 +273,6 @@ export default function ImageCanvas({
               <Camera className="w-8 h-8 opacity-40" />
             </div>
           )}
-          {/* Overlay controls */}
           <div className="absolute inset-0 bg-ink/35 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity duration-300 gap-1.5">
             {avatarUrl ? (
               <div className="flex gap-2">
@@ -311,7 +294,10 @@ export default function ImageCanvas({
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); setCameraOpen(true) }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setCameraOpen(true)
+                  }}
                   className="p-1.5 rounded-full bg-paper hover:bg-pink-accent hover:text-white text-ink transition-all shadow-sm"
                   title="Capture Photo"
                 >
@@ -329,7 +315,10 @@ export default function ImageCanvas({
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); setCameraOpen(true) }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setCameraOpen(true)
+                  }}
                   className="text-[10px] text-white font-bold uppercase tracking-wider bg-black/30 px-2 py-1 rounded-full"
                 >
                   Capture
@@ -338,7 +327,6 @@ export default function ImageCanvas({
             )}
           </div>
         </div>
-
         <input
           ref={inputRef}
           type="file"
@@ -346,7 +334,6 @@ export default function ImageCanvas({
           className="hidden"
           onChange={(e) => validateAndAddFiles(e.target.files)}
         />
-
         <ImageEditorModal
           isOpen={editorOpen}
           onClose={() => setEditorOpen(false)}
@@ -363,6 +350,7 @@ export default function ImageCanvas({
     )
   }
 
+  // ---- Cover variant ----
   if (variant === 'cover') {
     const coverUrl = images[0]
     return (
@@ -373,14 +361,17 @@ export default function ImageCanvas({
           </p>
         )}
         <div
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOver(true)
+          }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => inputRef.current?.click()}
-          className={`
-            relative w-full aspect-[3/1] min-h-44 overflow-hidden bg-cream-dark cursor-pointer transition-all duration-400 border-2 border-dashed
-            ${dragOver ? 'border-pink-accent bg-soft-pink/15 scale-[1.01]' : 'border-transparent'}
-          `}
+          className={`relative w-full aspect-[3/1] min-h-44 overflow-hidden bg-cream-dark cursor-pointer transition-all duration-400 border-2 border-dashed ${dragOver
+            ? 'border-pink-accent bg-soft-pink/15 scale-[1.01]'
+            : 'border-transparent'
+            }`}
         >
           {coverUrl ? (
             <img src={coverUrl} alt="Cover" className="h-full w-full object-cover" />
@@ -390,7 +381,6 @@ export default function ImageCanvas({
               <span className="text-xs font-semibold">Drag or click to choose cover</span>
             </div>
           )}
-          {/* Controls overlay */}
           <div className="absolute inset-0 bg-ink/15 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-4 gap-2">
             {coverUrl && (
               <>
@@ -410,7 +400,10 @@ export default function ImageCanvas({
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); setCameraOpen(true) }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setCameraOpen(true)
+                  }}
                   className="px-3.5 py-1.5 rounded-full bg-paper/95 text-ink text-xs font-semibold shadow-card cursor-pointer hover:bg-pink-accent hover:text-white transition-all flex items-center gap-1"
                 >
                   <Camera className="w-3.5 h-3.5" /> Capture
@@ -419,7 +412,6 @@ export default function ImageCanvas({
             )}
           </div>
         </div>
-
         <input
           ref={inputRef}
           type="file"
@@ -427,7 +419,6 @@ export default function ImageCanvas({
           className="hidden"
           onChange={(e) => validateAndAddFiles(e.target.files)}
         />
-
         <ImageEditorModal
           isOpen={editorOpen}
           onClose={() => setEditorOpen(false)}
@@ -444,7 +435,7 @@ export default function ImageCanvas({
     )
   }
 
-  // ---- Polaroid / default ----
+  // ---- Polaroid / default: Empty state ----
   if (images.length === 0) {
     return (
       <div className="relative w-full">
@@ -454,20 +445,18 @@ export default function ImageCanvas({
           </p>
         )}
         <motion.div
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOver(true)
+          }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => inputRef.current?.click()}
           whileHover={{ scale: 1.005 }}
-          className={`
-            ${aspectClass} w-full rounded-2xl cursor-pointer
-            border-2 border-dashed transition-all duration-400
-            flex flex-col items-center justify-center gap-4 p-8 text-center
-            ${dragOver
-              ? 'border-pink-accent bg-soft-pink/12 scale-[1.01] shadow-card'
-              : 'border-beige/80 bg-cream-dark/25 hover:border-pink-accent/50 hover:bg-cream-dark/40 shadow-inner-sm'
-            }
-          `}
+          className={`${aspectClass} w-full rounded-2xl cursor-pointer border-2 border-dashed transition-all duration-400 flex flex-col items-center justify-center gap-4 p-8 text-center ${dragOver
+            ? 'border-pink-accent bg-soft-pink/12 scale-[1.01] shadow-card'
+            : 'border-beige/80 bg-cream-dark/25 hover:border-pink-accent/50 hover:bg-cream-dark/40 shadow-inner-sm'
+            }`}
           style={{ rotate: '-0.3deg' }}
         >
           <div className="flex items-center gap-4">
@@ -476,7 +465,10 @@ export default function ImageCanvas({
             </div>
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); setCameraOpen(true) }}
+              onClick={(e) => {
+                e.stopPropagation()
+                setCameraOpen(true)
+              }}
               className="w-14 h-14 rounded-full bg-paper-warm flex items-center justify-center text-brown-light shadow-card border border-beige/35 hover:bg-pink-accent hover:text-white transition-colors"
               title="Capture with camera"
             >
@@ -496,7 +488,6 @@ export default function ImageCanvas({
             onChange={(e) => validateAndAddFiles(e.target.files)}
           />
         </motion.div>
-
         <ImageEditorModal
           isOpen={editorOpen}
           onClose={() => setEditorOpen(false)}
@@ -513,7 +504,7 @@ export default function ImageCanvas({
     )
   }
 
-  // Single image (polaroid)
+  // ---- Polaroid / default: Single image ----
   if (!multiple || images.length === 1) {
     return (
       <div className="relative w-full">
@@ -522,12 +513,17 @@ export default function ImageCanvas({
             <AlertCircle className="w-3 h-3" /> {validationError}
           </p>
         )}
-        <div className={`relative ${aspectClass} w-full rounded-2xl overflow-hidden polaroid-frame border border-beige/40 group p-2.5 pb-10`} style={{ rotate: '0.5deg' }}>
-          <img src={images[0]} alt="" className="w-full h-full object-cover rounded-lg border border-beige/25" />
+        <div
+          className={`relative ${aspectClass} w-full rounded-2xl overflow-hidden polaroid-frame border border-beige/40 group p-2.5 pb-10`}
+          style={{ rotate: '0.5deg' }}
+        >
+          <img
+            src={images[0]}
+            alt=""
+            className="w-full h-full object-cover rounded-lg border border-beige/25"
+          />
           <div className="absolute inset-2.5 rounded-lg bg-black/0 group-hover:bg-black/12 transition-all duration-300" />
-
           <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-16 h-5 washi-tape pointer-events-none z-10" />
-
           <div className="absolute top-5 right-5 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <button
               type="button"
@@ -561,7 +557,6 @@ export default function ImageCanvas({
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
-
           <input
             ref={inputRef}
             type="file"
@@ -570,7 +565,6 @@ export default function ImageCanvas({
             onChange={(e) => validateAndAddFiles(e.target.files)}
           />
         </div>
-
         <ImageEditorModal
           isOpen={editorOpen}
           onClose={() => setEditorOpen(false)}
@@ -587,7 +581,7 @@ export default function ImageCanvas({
     )
   }
 
-  // ---- Multiple images (polaroid) ----
+  // ---- Polaroid / default: Multiple images (CAROUSEL) ----
   return (
     <div className="space-y-5">
       {validationError && (
@@ -596,26 +590,67 @@ export default function ImageCanvas({
         </p>
       )}
 
-      {/* Primary active preview */}
-      <div className={`relative ${aspectClass} w-full rounded-2xl overflow-hidden polaroid-frame border border-beige/40 p-2.5 pb-10`} style={{ rotate: '-0.5deg' }}>
-        <img src={images[0]} alt="" className="w-full h-full object-cover rounded-lg" />
+      {/* Main carousel preview */}
+      <div
+        className={`relative ${aspectClass} w-full rounded-2xl overflow-hidden polaroid-frame border border-beige/40 p-2.5 pb-10`}
+        style={{ rotate: '-0.5deg' }}
+      >
+        <ImageCarousel
+          images={images}
+          aspect={aspect === '3/4' ? '3/4' : aspect === '3/1' ? '3/1' : '4/3'}
+          rounded="rounded-lg"
+          showCounter={true}
+          showDots={false}           // no dots, only counter
+          counterPosition="bottom-right"
+          arrowVariant="modern"
+          className="cursor-pointer"
+        />
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-16 h-5 washi-tape pointer-events-none z-10" />
+
+        {/* Action buttons */}
+        <div className="absolute top-5 right-5 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+          <button
+            type="button"
+            onClick={openFileInput}
+            className="px-3.5 py-1.5 rounded-full bg-paper/95 text-ink text-xs font-semibold shadow-card cursor-pointer hover:bg-pink-accent hover:text-white transition-all flex items-center gap-1"
+          >
+            <Upload className="w-3.5 h-3.5" /> Add
+          </button>
+          <button
+            type="button"
+            onClick={(e) => setCameraOpen(true)}
+            className="w-8 h-8 rounded-full bg-paper/95 text-ink flex items-center justify-center cursor-pointer hover:bg-pink-accent hover:text-white transition-all shadow-card"
+            title="Capture Photo"
+          >
+            <Camera className="w-4 h-4" />
+          </button>
+        </div>
+
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => validateAndAddFiles(e.target.files)}
+        />
       </div>
 
-      {/* Thumbnails grid with drag & drop reordering */}
+      {/* Thumbnails strip with drag & drop reordering */}
       <div className="flex gap-3 overflow-x-auto pb-2 pl-0.5 scrollbar-thin">
         {images.map((src, i) => (
           <div
             key={i}
             draggable
             onDragStart={(e) => handleDragStart(e, i)}
-            onDragOver={(e) => handleDragOver(e, i)}
+            onDragOver={(e) => handleDragOver(e)}
             onDrop={(e) => handleDropReorder(e, i)}
-            className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 group border shadow-sm transition-all cursor-move ${draggedIdx === i ? 'border-pink-accent opacity-30 scale-95' : 'border-beige/40 hover:border-pink-accent/40'
+            className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 group border shadow-sm transition-all cursor-move ${draggedIdx === i
+              ? 'border-pink-accent opacity-30 scale-95'
+              : 'border-beige/40 hover:border-pink-accent/40'
               }`}
           >
             <img src={src} alt="" className="w-full h-full object-cover" />
-
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 type="button"
@@ -636,8 +671,6 @@ export default function ImageCanvas({
             </div>
           </div>
         ))}
-
-        {/* Add buttons: Upload and Capture */}
         <div className="flex gap-2">
           <button
             type="button"
@@ -657,15 +690,6 @@ export default function ImageCanvas({
           </button>
         </div>
       </div>
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={(e) => validateAndAddFiles(e.target.files)}
-      />
 
       <ImageEditorModal
         isOpen={editorOpen}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Calendar, Smile } from 'lucide-react'
 import VisualEditorShell from './VisualEditorShell'
@@ -12,11 +12,18 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, bookId, initia
   const [description, setDescription] = useState('')
   const [images, setImages] = useState([])
 
+  // 1. Keep a ref to the latest initialImages prop
+  const initialImagesRef = useRef(initialImages);
+  useEffect(() => {
+    initialImagesRef.current = initialImages || [];
+  }, [initialImages]);
+
+  // 2. Only set images when modal opens, using the ref value
   useEffect(() => {
     if (isOpen) {
-      setImages(initialImages);
+      setImages(initialImagesRef.current);
     }
-  }, [isOpen, initialImages]);
+  }, [isOpen]); // Only depends on isOpen
 
   const reset = () => {
     setTitle('')
