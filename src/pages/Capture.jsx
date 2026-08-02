@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import TopBar from "../components/TopBar";
 import Photo from "../components/Photo";
 import PolaroidStack from "../components/PolaroidStack";
+import CreateBookModal from "../components/CreateBookModal";
+import Button from "../components/ui/Button";
+import { useApp } from "../context/AppContext";
 
 export default function Capture() {
   const navigate = useNavigate();
-
+  const location = useLocation();
+  const { books, addBook, addMemory } = useApp();
+  
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
@@ -21,6 +26,11 @@ export default function Capture() {
   const [flash, setFlash] = useState(false);
 
   const [successMessage, setSuccessMessage] = useState("");
+  
+  // Get the onCaptureComplete callback from navigation state
+  const onCaptureComplete = location.state?.onCaptureComplete;
+  const [showBookModal, setShowBookModal] = useState(false);
+  const [selectedPhotoForUpload, setSelectedPhotoForUpload] = useState(null);
 
   const stopCamera = useCallback(() => {
     if (!streamRef.current) return;
@@ -77,6 +87,68 @@ export default function Capture() {
       setSuccessMessage("");
     }, 2000);
   }
+  
+  // Handle photo capture with option to upload to book
+  function handleCapture(image) {
+    const newPhoto = {
+      id: crypto.randomUUID(),
+      image,
+      date: "Just Now",
+    };
+    
+    setPhotos((prev) => {
+      const updated = [newPhoto, ...prev];
+      return updated.slice(0, 2);
+    });
+    
+    // If there's an onCaptureComplete callback, call it with the image
+    if (onCaptureComplete) {
+      onCaptureComplete([image]);
+      showSuccess("Photo added! Now let's save it to a book.");
+      setSelectedPhotoForUpload(image);
+      setShowBookModal(true);
+    } else {
+      showSuccess("Photo captured!");
+    }
+  }
+  
+  // Handle creating a new book and adding the captured photo as a memory
+  const handleCreateBookAndAddMemory = (bookData) => {
+    const newBook = addBook(bookData);
+    
+    if (selectedPhotoForUpload && newBook) {
+      addMemory({
+        bookId: newBook.id,
+        title: "Captured Moment",
+        date: new Date().toISOString().split('T')[0],
+        mood: "happy",
+        description: "",
+        images: [selectedPhotoForUpload],
+      });
+      showSuccess("Memory saved to new book!");
+    }
+    
+    setShowBookModal(false);
+    navigate(`/books/${newBook.id}`);
+  };
+  
+  // Handle adding memory to existing book
+  const handleAddToExistingBook = (bookId) => {
+    if (selectedPhotoForUpload) {
+      addMemory({
+        bookId,
+        title: "Captured Moment",
+        date: new Date().toISOString().split('T')[0],
+        mood: "happy",
+        description: "",
+        images: [selectedPhotoForUpload],
+      });
+      showSuccess("Memory saved to book!");
+    }
+    
+    setShowBookModal(false);
+    navigate(`/books/${bookId}`);
+  };
 
   return (
     <div className="fixed inset-0 bg-black">
@@ -112,20 +184,7 @@ export default function Capture() {
           videoRef={videoRef}
           flash={flash}
           setFlash={setFlash}
-          setCapture={(image) => {
-            setPhotos((prev) => {
-              const updated = [
-                {
-                  id: crypto.randomUUID(),
-                  image,
-                  date: "Just Now",
-                },
-                ...prev,
-              ];
-
-              return updated.slice(0, 2);
-            });
-          }}
+          setCapture={handleCapture}
         />
       </div>
 
@@ -156,6 +215,55 @@ export default function Capture() {
         >
           {successMessage}
         </motion.div>
+      )}
+
+      {/* Book Selection Modal */}
+      {showBookModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="scrapbook-card rounded-[24px] p-8 max-w-md w-full bg-paper shadow-2xl"
+          >
+            <div className="text-center mb-6">
+              <h3 className="font-display text-2xl font-semibold text-ink mb-2">Save Your Memory</h3>
+              <p className="text-ink-muted text-sm">
+                Choose an existing book or create a new one for this captured moment.
+              </p>
+            </div>
+            
+            <div className="space-y-3 mb-6 max-h-60 overflow-y-auto">
+              {books.length > 0 ? (
+                books.map((book) => (
+                  <button
+                    key={book.id}
+                    onClick={() => handleAddToExistingBook(book.id)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl border border-beige/40 hover:border-pink-accent/50 hover:bg-soft-pink/10 transition-all text-left"
+                  >
+                    <img src={book.coverImage} alt="" className="w-10 h-14 object-cover rounded-r-md rounded-l-sm" />
+                    <div>
+                      <p className="font-display font-semibold text-ink text-sm">{book.title}</p>
+                      <p className="text-[10px] text-ink-muted uppercase tracking-wider">{book.memoryCount} memories</p>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <p className="text-ink-muted text-sm text-center py-4">No books yet. Create a new one!</p>
+              )}
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <Button onClick={() => setShowBookModal(false)} variant="secondary" size="sm">
+                Cancel
+              </Button>
+              <CreateBookModal
+                isOpen={true}
+                onClose={() => setShowBookModal(false)}
+                onSave={handleCreateBookAndAddMemory}
+              />
+            </div>
+          </motion.div>
+        </div>
       )}
 
     </div>
