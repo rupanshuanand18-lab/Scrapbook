@@ -1,10 +1,140 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Upload, Trash2, Plus, Camera, ImagePlus, Crop, AlertCircle } from 'lucide-react'
+import {
+  Upload, Trash2, Plus, Camera, ImagePlus, Crop, AlertCircle,
+  X, RotateCw
+} from 'lucide-react'
 import ImageEditorModal from './ImageEditorModal'
 
+// --- Camera Capture Modal (inline) ---
+function CameraCaptureModal({ isOpen, onClose, onCapture }) {
+  const videoRef = useRef(null)
+  const canvasRef = useRef(null)
+  const streamRef = useRef(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [facingMode, setFacingMode] = useState('environment')
+  const [flash, setFlash] = useState(false)
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
+  }, [])
+
+  const startCamera = useCallback(async () => {
+    stopCamera()
+    setLoading(true)
+    setError('')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facingMode } },
+        audio: false,
+      })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+      }
+      setLoading(false)
+    } catch (err) {
+      console.error(err)
+      setLoading(false)
+      setError('Unable to access camera.')
+    }
+  }, [facingMode, stopCamera])
+
+  useEffect(() => {
+    if (isOpen) {
+      startCamera()
+    } else {
+      stopCamera()
+    }
+    return () => stopCamera()
+  }, [isOpen, startCamera, stopCamera])
+
+  const flipCamera = () => {
+    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment')
+  }
+
+  const capture = () => {
+    if (!videoRef.current) return
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const dataUrl = canvas.toDataURL('image/png')
+    setFlash(true)
+    setTimeout(() => setFlash(false), 150)
+    onCapture(dataUrl)
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      <div className="relative w-full max-w-md bg-black rounded-2xl overflow-hidden shadow-2xl">
+        <div className="relative aspect-video bg-black">
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center text-white text-sm">
+              Loading camera...
+            </div>
+          )}
+          {error && (
+            <div className="absolute inset-0 flex items-center justify-center text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className="h-full w-full object-cover"
+          />
+          {flash && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.1 }}
+              className="absolute inset-0 bg-white pointer-events-none"
+            />
+          )}
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <button
+            onClick={flipCamera}
+            className="absolute top-3 left-3 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition"
+          >
+            <RotateCw className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-4 flex justify-center">
+          <button
+            onClick={capture}
+            disabled={loading || !!error}
+            className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center hover:scale-105 transition disabled:opacity-50"
+          >
+            <Camera className="w-8 h-8 text-black" />
+          </button>
+        </div>
+        <canvas ref={canvasRef} className="hidden" />
+      </div>
+    </div>
+  )
+}
+
+// --- Main ImageCanvas component ---
 export default function ImageCanvas({
-  images = [], // Array of URLs / DataUrls
+  images = [],
   onImagesChange,
   multiple = false,
   aspect = '4/3',
@@ -15,10 +145,19 @@ export default function ImageCanvas({
   const inputRef = useRef(null)
   const [dragOver, setDragOver] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
-  const [isOpen, setIsOpen] = useState(false) // For single image editor
   const [editingFiles, setEditingFiles] = useState([])
-  const [editIndex, setEditIndex] = useState(null) // If editing an existing single image
+  const [editIndex, setEditIndex] = useState(null)
   const [validationError, setValidationError] = useState('')
+  const [cameraOpen, setCameraOpen] = useState(false)
+
+  // Determine crop aspect ratio based on variant
+  let cropAspectRatio = undefined
+  if (variant === 'avatar') cropAspectRatio = 1
+  else if (variant === 'cover') cropAspectRatio = 3 / 1
+  else if (aspect === '3/4') cropAspectRatio = 3 / 4
+  else if (aspect === '3/1') cropAspectRatio = 3 / 1
+  else if (aspect === '4/3') cropAspectRatio = 4 / 3
+  // if aspect is something else, we leave undefined (free crop)
 
   // Handle selected files
   const validateAndAddFiles = (files) => {
@@ -47,9 +186,8 @@ export default function ImageCanvas({
 
     if (acceptedFiles.length === 0) return
 
-    // Launch Editor modal with these files
     setEditingFiles(acceptedFiles)
-    setEditIndex(null) // we are adding new files
+    setEditIndex(null)
     setEditorOpen(true)
   }
 
@@ -64,7 +202,7 @@ export default function ImageCanvas({
     onImagesChange(images.filter((_, i) => i !== index))
   }
 
-  // HTML5 Drag and Drop Reordering
+  // Drag and drop reordering
   const [draggedIdx, setDraggedIdx] = useState(null)
 
   const handleDragStart = (e, index) => {
@@ -88,7 +226,7 @@ export default function ImageCanvas({
     setDraggedIdx(null)
   }
 
-  // Edit existing image handler
+  // Edit existing image
   const handleEditExisting = (index, e) => {
     e.stopPropagation()
     setEditingFiles([images[index]])
@@ -96,27 +234,35 @@ export default function ImageCanvas({
     setEditorOpen(true)
   }
 
-  // NEW FUNCTION: Direct trigger to open the profile picture single editor or general standard editor modal with specific aspect ratio
-  const handleOpenCustomEditor = () => {
-    setIsOpen(true)
-  }
-
   // Editor complete callback
   const handleSaveComplete = (processedUrls) => {
     if (editIndex !== null) {
-      // Replacing or editing a specific existing image
       const updated = [...images]
       updated[editIndex] = processedUrls[0]
       onImagesChange(updated)
     } else {
-      // Adding new files
       onImagesChange(multiple ? [...images, ...processedUrls] : [processedUrls[0]])
     }
   }
 
+  // Camera capture handler
+  const handleCameraCapture = (dataUrl) => {
+    setCameraOpen(false)
+    // Treat captured image as a file for editing
+    setEditingFiles([dataUrl])
+    setEditIndex(null)
+    setEditorOpen(true)
+  }
+
+  // Helper to open file input
+  const openFileInput = (e) => {
+    e.stopPropagation()
+    inputRef.current?.click()
+  }
+
   const aspectClass = aspect === '3/4' ? 'aspect-[3/4.2]' : aspect === '3/1' ? 'aspect-[3/1]' : 'aspect-[4/3]'
 
-  // Render variant styles
+  // ---- Render variants ----
   if (variant === 'avatar') {
     const avatarUrl = images[0]
     return (
@@ -143,7 +289,7 @@ export default function ImageCanvas({
               <Camera className="w-8 h-8 opacity-40" />
             </div>
           )}
-          {/* Overlay controls on hover */}
+          {/* Overlay controls */}
           <div className="absolute inset-0 bg-ink/35 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity duration-300 gap-1.5">
             {avatarUrl ? (
               <div className="flex gap-2">
@@ -157,15 +303,38 @@ export default function ImageCanvas({
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); inputRef.current?.click() }}
+                  onClick={openFileInput}
                   className="p-1.5 rounded-full bg-paper hover:bg-pink-accent hover:text-white text-ink transition-all shadow-sm"
                   title="Replace Photo"
                 >
                   <Upload className="w-4 h-4" />
                 </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setCameraOpen(true) }}
+                  className="p-1.5 rounded-full bg-paper hover:bg-pink-accent hover:text-white text-ink transition-all shadow-sm"
+                  title="Capture Photo"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
               </div>
             ) : (
-              <span className="text-[10px] text-white font-bold uppercase tracking-wider">Upload</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={openFileInput}
+                  className="text-[10px] text-white font-bold uppercase tracking-wider bg-black/30 px-2 py-1 rounded-full"
+                >
+                  Upload
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setCameraOpen(true) }}
+                  className="text-[10px] text-white font-bold uppercase tracking-wider bg-black/30 px-2 py-1 rounded-full"
+                >
+                  Capture
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -178,27 +347,18 @@ export default function ImageCanvas({
           onChange={(e) => validateAndAddFiles(e.target.files)}
         />
 
-        {/* Editing Modal Portals */}
         <ImageEditorModal
           isOpen={editorOpen}
           onClose={() => setEditorOpen(false)}
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
-          defaultCropMode="free"
+          aspectRatio={cropAspectRatio}
         />
-        <ImageEditorModal
-          isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
-          initialFiles={editingFiles}
-          onSaveComplete={(dataUrls) => {
-            const firstImage = dataUrls[0]
-            console.log('Final image data URL:', firstImage)
-            onImagesChange([firstImage])
-            setIsOpen(false)
-          }}
-          aspectRatio={1} // Square crop configuration for profile picture
+        <CameraCaptureModal
+          isOpen={cameraOpen}
+          onClose={() => setCameraOpen(false)}
+          onCapture={handleCameraCapture}
         />
-
       </div>
     )
   }
@@ -243,10 +403,17 @@ export default function ImageCanvas({
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); inputRef.current?.click() }}
+                  onClick={openFileInput}
                   className="px-3.5 py-1.5 rounded-full bg-paper/95 text-ink text-xs font-semibold shadow-card cursor-pointer hover:bg-pink-accent hover:text-white transition-all flex items-center gap-1"
                 >
                   <Upload className="w-3.5 h-3.5" /> Replace
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setCameraOpen(true) }}
+                  className="px-3.5 py-1.5 rounded-full bg-paper/95 text-ink text-xs font-semibold shadow-card cursor-pointer hover:bg-pink-accent hover:text-white transition-all flex items-center gap-1"
+                >
+                  <Camera className="w-3.5 h-3.5" /> Capture
                 </button>
               </>
             )}
@@ -266,13 +433,18 @@ export default function ImageCanvas({
           onClose={() => setEditorOpen(false)}
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
-          defaultCropMode="free"
+          aspectRatio={cropAspectRatio}
+        />
+        <CameraCaptureModal
+          isOpen={cameraOpen}
+          onClose={() => setCameraOpen(false)}
+          onCapture={handleCameraCapture}
         />
       </div>
     )
   }
 
-  // Polaroid / default empty state
+  // ---- Polaroid / default ----
   if (images.length === 0) {
     return (
       <div className="relative w-full">
@@ -298,8 +470,18 @@ export default function ImageCanvas({
           `}
           style={{ rotate: '-0.3deg' }}
         >
-          <div className="w-14 h-14 rounded-full bg-paper-warm flex items-center justify-center text-brown-light shadow-card border border-beige/35">
-            <Upload className="w-5 h-5 opacity-65" />
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-paper-warm flex items-center justify-center text-brown-light shadow-card border border-beige/35">
+              <Upload className="w-5 h-5 opacity-65" />
+            </div>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setCameraOpen(true) }}
+              className="w-14 h-14 rounded-full bg-paper-warm flex items-center justify-center text-brown-light shadow-card border border-beige/35 hover:bg-pink-accent hover:text-white transition-colors"
+              title="Capture with camera"
+            >
+              <Camera className="w-5 h-5" />
+            </button>
           </div>
           <div>
             <p className="font-display text-lg font-semibold text-ink">{emptyLabel}</p>
@@ -320,13 +502,18 @@ export default function ImageCanvas({
           onClose={() => setEditorOpen(false)}
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
-          defaultCropMode="free"
+          aspectRatio={cropAspectRatio}
+        />
+        <CameraCaptureModal
+          isOpen={cameraOpen}
+          onClose={() => setCameraOpen(false)}
+          onCapture={handleCameraCapture}
         />
       </div>
     )
   }
 
-  // Polaroid Single display
+  // Single image (polaroid)
   if (!multiple || images.length === 1) {
     return (
       <div className="relative w-full">
@@ -352,10 +539,18 @@ export default function ImageCanvas({
             </button>
             <button
               type="button"
-              onClick={() => inputRef.current?.click()}
+              onClick={openFileInput}
               className="px-3.5 py-1.5 rounded-full bg-paper/95 text-ink text-xs font-semibold shadow-card cursor-pointer hover:bg-paper transition-all"
             >
               Replace
+            </button>
+            <button
+              type="button"
+              onClick={(e) => setCameraOpen(true)}
+              className="w-8 h-8 rounded-full bg-paper/95 text-ink flex items-center justify-center cursor-pointer hover:bg-pink-accent hover:text-white transition-all shadow-card"
+              title="Capture Photo"
+            >
+              <Camera className="w-4 h-4" />
             </button>
             <button
               type="button"
@@ -381,13 +576,18 @@ export default function ImageCanvas({
           onClose={() => setEditorOpen(false)}
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
-          defaultCropMode="free"
+          aspectRatio={cropAspectRatio}
+        />
+        <CameraCaptureModal
+          isOpen={cameraOpen}
+          onClose={() => setCameraOpen(false)}
+          onCapture={handleCameraCapture}
         />
       </div>
     )
   }
 
-  // Polaroid Multiple display
+  // ---- Multiple images (polaroid) ----
   return (
     <div className="space-y-5">
       {validationError && (
@@ -402,7 +602,7 @@ export default function ImageCanvas({
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-16 h-5 washi-tape pointer-events-none z-10" />
       </div>
 
-      {/* Thumbnails grid with HTML5 Drag & Drop reordering support */}
+      {/* Thumbnails grid with drag & drop reordering */}
       <div className="flex gap-3 overflow-x-auto pb-2 pl-0.5 scrollbar-thin">
         {images.map((src, i) => (
           <div
@@ -416,7 +616,6 @@ export default function ImageCanvas({
           >
             <img src={src} alt="" className="w-full h-full object-cover" />
 
-            {/* Action overlay */}
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 type="button"
@@ -438,15 +637,25 @@ export default function ImageCanvas({
           </div>
         ))}
 
-        {/* Plus button to add more images */}
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="w-16 h-16 rounded-xl border-2 border-dashed border-beige/80 bg-cream-dark/20 flex items-center justify-center text-ink-muted hover:border-pink-accent hover:text-pink-accent transition-all cursor-pointer flex-shrink-0"
-          title="Add photo"
-        >
-          <Plus className="w-5 h-5" />
-        </button>
+        {/* Add buttons: Upload and Capture */}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={openFileInput}
+            className="w-16 h-16 rounded-xl border-2 border-dashed border-beige/80 bg-cream-dark/20 flex items-center justify-center text-ink-muted hover:border-pink-accent hover:text-pink-accent transition-all cursor-pointer flex-shrink-0"
+            title="Add photo"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setCameraOpen(true)}
+            className="w-16 h-16 rounded-xl border-2 border-dashed border-beige/80 bg-cream-dark/20 flex items-center justify-center text-ink-muted hover:border-pink-accent hover:text-pink-accent transition-all cursor-pointer flex-shrink-0"
+            title="Capture photo"
+          >
+            <Camera className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <input
@@ -463,8 +672,13 @@ export default function ImageCanvas({
         onClose={() => setEditorOpen(false)}
         initialFiles={editingFiles}
         onSaveComplete={handleSaveComplete}
-        defaultCropMode="free"
+        aspectRatio={cropAspectRatio}
         multiple
+      />
+      <CameraCaptureModal
+        isOpen={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        onCapture={handleCameraCapture}
       />
     </div>
   )

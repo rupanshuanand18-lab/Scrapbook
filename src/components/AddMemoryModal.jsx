@@ -1,16 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Calendar, Smile } from 'lucide-react'
 import VisualEditorShell from './VisualEditorShell'
 import ImageCanvas from './ImageCanvas'
 import { moods } from '../data/mockData'
 
-export default function AddMemoryModal({ isOpen, onClose, onSave, bookId }) {
+export default function AddMemoryModal({ isOpen, onClose, onSave, bookId, initialImages = [] }) {
   const [title, setTitle] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [mood, setMood] = useState('happy')
   const [description, setDescription] = useState('')
   const [images, setImages] = useState([])
+
+  useEffect(() => {
+    if (isOpen) {
+      setImages(initialImages);
+    }
+  }, [isOpen, initialImages]);
 
   const reset = () => {
     setTitle('')
