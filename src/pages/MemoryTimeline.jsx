@@ -126,8 +126,8 @@ export default function MemoryTimeline() {
                     layout
                     className="group relative"
                   >
-                    <MemoryCard 
-                      memory={memory} 
+                    <MemoryCard
+                      memory={memory}
                       index={i}
                       onEdit={() => handleEditMemory(memory)}
                       onDelete={() => handleDeleteMemory(memory)}

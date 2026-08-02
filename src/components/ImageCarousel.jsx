@@ -9,9 +9,9 @@ export default function ImageCarousel({
     className = '',
     rounded = 'rounded-lg',
     showCounter = true,
-    showDots = false,               // new: show dot indicators
-    counterPosition = 'bottom-right', // new: 'bottom-right' or 'top-right'
-    arrowVariant = 'modern',        // new: 'modern' or 'default'
+    showDots = false,
+    counterPosition = 'bottom-right',
+    arrowVariant = 'modern',
     autoplay = false,
     autoplayInterval = 4000,
 }) {
@@ -80,16 +80,18 @@ export default function ImageCarousel({
                     ? 'aspect-[3/1]'
                     : 'aspect-[4/3]'
 
-    // Arrow styles based on variant
-    const arrowClass =
+    // Arrow styles – always visible with opacity-80 and higher z-index
+    const arrowBaseClass =
         arrowVariant === 'modern'
             ? 'w-10 h-10 rounded-full border border-beige bg-paper/90 shadow-sm backdrop-blur-sm hover:bg-paper text-ink'
             : 'w-9 h-9 rounded-full bg-paper/90 shadow-md hover:bg-pink-accent hover:text-white hover:scale-110'
 
+    const arrowClass = `${arrowBaseClass} opacity-80 transition-all duration-300 z-20`
+
     const counterClasses =
         counterPosition === 'bottom-right'
-            ? 'absolute bottom-4 right-4 rounded-full bg-ink/70 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm'
-            : 'absolute top-2 right-2 px-2.5 py-1 rounded-full bg-ink/55 text-paper text-[10px] font-bold tracking-wide backdrop-blur-sm shadow-sm'
+            ? 'absolute bottom-4 right-4 rounded-full bg-ink/70 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm z-20'
+            : 'absolute top-2 right-2 px-2.5 py-1 rounded-full bg-ink/55 text-paper text-[10px] font-bold tracking-wide backdrop-blur-sm shadow-sm z-20'
 
     return (
         <div
@@ -124,12 +126,12 @@ export default function ImageCarousel({
 
                 {hasMultiple && (
                     <>
-                        {/* Navigation arrows */}
+                        {/* Navigation arrows – always visible */}
                         <button
                             type="button"
                             onClick={goPrev}
                             aria-label="Previous image"
-                            className={`absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 ${arrowClass}`}
+                            className={`absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center ${arrowClass}`}
                         >
                             <ChevronLeft className="w-5 h-5" />
                         </button>
@@ -137,14 +139,14 @@ export default function ImageCarousel({
                             type="button"
                             onClick={goNext}
                             aria-label="Next image"
-                            className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 ${arrowClass}`}
+                            className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center ${arrowClass}`}
                         >
                             <ChevronRight className="w-5 h-5" />
                         </button>
 
-                        {/* Dot indicators (only if showDots is true) */}
+                        {/* Optional dot indicators */}
                         {showDots && (
-                            <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 bg-ink/20 backdrop-blur-sm px-2.5 py-1.5 rounded-full">
+                            <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 bg-ink/20 backdrop-blur-sm px-2.5 py-1.5 rounded-full">
                                 {images.map((_, i) => (
                                     <button
                                         key={i}
@@ -160,9 +162,9 @@ export default function ImageCarousel({
                             </div>
                         )}
 
-                        {/* Counter */}
+                        {/* Counter – always visible, with stable key */}
                         {showCounter && (
-                            <div className={counterClasses}>
+                            <div key="carousel-counter" className={counterClasses}>
                                 {currentIndex + 1} / {images.length}
                             </div>
                         )}

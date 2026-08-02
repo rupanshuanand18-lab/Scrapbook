@@ -7,6 +7,7 @@ import Button from '../components/ui/Button'
 import AddMemoryModal from '../components/AddMemoryModal'
 import EditMemoryModal from '../components/EditMemoryModal'
 import EditBookModal from '../components/EditBookModal'
+import ImageCarousel from '../components/ImageCarousel'
 import { useApp } from '../context/AppContext'
 import { getThemeById, getUserById } from '../data/mockData'
 
@@ -205,9 +206,18 @@ export default function BookDetail() {
                       </button>
                     </div>
 
-                    {memory.images?.[0] && (
+                    {memory.images?.length > 0 && (
                       <div className="aspect-square overflow-hidden rounded-xs border border-beige/30">
-                        <img src={memory.images[0]} alt="" className="w-full h-full object-cover" />
+                        <ImageCarousel
+                          images={memory.images}
+                          aspect="1/1"
+                          rounded="rounded-none"
+                          showCounter={true}
+                          showDots={false}
+                          counterPosition="bottom-right"
+                          arrowVariant="modern"
+                          className="h-full"
+                        />
                       </div>
                     )}
                     <div className="pt-5 font-sans">
