@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Check,
@@ -7,7 +7,6 @@ import {
   Plus,
   RefreshCw,
   RotateCw,
-  Trash2,
   X,
   ZoomIn,
 } from 'lucide-react'
@@ -182,6 +181,7 @@ export default function ImageEditorModal({
     }
   }, [])
 
+  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -194,6 +194,7 @@ export default function ImageEditorModal({
     }
   }, [isOpen])
 
+  // Initialize images when modal opens with files
   useEffect(() => {
     if (!isOpen) return
     if (!initialFiles || initialFiles.length === 0) {
@@ -220,7 +221,7 @@ export default function ImageEditorModal({
       if (e.key === 'r' || e.key === 'R') {
         if (e.metaKey || e.ctrlKey) return
         e.preventDefault()
-        handleRotate()
+        handleRotateCurrent()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -241,7 +242,7 @@ export default function ImageEditorModal({
     setIsImageLoading(false)
   }
 
-  const handleRotate = () => {
+  const handleRotateCurrent = () => {
     if (!activeImage) return
     const nextRotate = (activeImage.rotate + 90) % 360
     const clampedZoom = Math.max(activeImage.zoom, MIN_ZOOM)
@@ -526,25 +527,35 @@ export default function ImageEditorModal({
 
   if (!isOpen) return null
 
+  // Calculate frame dimensions in render - this is acceptable as it's needed for layout
   let frameW = 300
   let frameH = 300
   let baseScale = 1
-  if (viewportRef.current && activeImage) {
-    const rect = viewportRef.current.getBoundingClientRect()
-    const size = getFrameSize(rect.width - 32, rect.height - 32)
-    frameW = size.w
-    frameH = size.h
-    if (activeImage.naturalW && activeImage.naturalH) {
-      baseScale = getBaseScale(activeImage, frameW, frameH)
-    }
-  } else if (activeImage) {
-    const ratio = aspectRatio
-    frameW = 300
-    frameH = frameW / ratio
-    if (activeImage.naturalW && activeImage.naturalH) {
-      baseScale = getBaseScale(activeImage, frameW, frameH)
+
+  // convert to a regular function, called directly during render
+  const calculateFrameDimensions = () => {
+    if (viewportRef.current && activeImage) {
+      const rect = viewportRef.current.getBoundingClientRect()
+      const size = getFrameSize(rect.width - 32, rect.height - 32)
+      frameW = size.w
+      frameH = size.h
+      if (activeImage.naturalW && activeImage.naturalH) {
+        baseScale = getBaseScale(activeImage, frameW, frameH)
+      }
+    } else if (activeImage) {
+      const ratio = aspectRatio
+      frameW = 300
+      frameH = frameW / ratio
+      if (activeImage.naturalW && activeImage.naturalH) {
+        baseScale = getBaseScale(activeImage, frameW, frameH)
+      }
     }
   }
+
+  // now the early return is safe
+  if (!isOpen) return null
+
+  calculateFrameDimensions()
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center">
@@ -706,7 +717,7 @@ export default function ImageEditorModal({
               </button>
 
               <button
-                onClick={handleRotate}
+                onClick={handleRotateCurrent}
                 className="flex flex-col items-center gap-1 rounded-xl px-4 py-2 text-ink-muted transition-colors hover:bg-beige/30 hover:text-ink"
               >
                 <RotateCw className="h-5 w-5" />

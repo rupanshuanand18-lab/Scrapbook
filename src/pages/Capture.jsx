@@ -1,16 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
 import TopBar from "../components/TopBar";
 import Photo from "../components/Photo";
-import VoiceRecorder from "../components/VoiceRecorder";
-import VideoRecorder from "../components/VideoRecorder";
-
 import PolaroidStack from "../components/PolaroidStack";
+import AddMemoryModal from "../components/AddMemoryModal";
+
+// Replace this mock with your actual books state management
+function useBooks() {
+  const [books] = useState([
+    { id: "book1", title: "Summer 2026" },
+    { id: "book2", title: "Family Moments" },
+  ]);
+  const addMemory = (memory) => {
+    console.log("Memory saved to book", memory);
+    // In a real app, update your global state / backend here
+  };
+  return { books, addMemory };
+}
 
 export default function Capture() {
   const navigate = useNavigate();
+  const { books, addMemory } = useBooks();
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -25,36 +37,37 @@ export default function Capture() {
 
   const [successMessage, setSuccessMessage] = useState("");
 
+  // Enlarged preview & AddMemory flow
+  const [enlargedPhoto, setEnlargedPhoto] = useState(null);
+  const [showBookSelector, setShowBookSelector] = useState(false);
+  const [selectedBookId, setSelectedBookId] = useState(null);
+  const [showAddMemory, setShowAddMemory] = useState(false);
 
+  // ---------- Camera functions (restored from original) ----------
   const stopCamera = useCallback(() => {
     if (!streamRef.current) return;
-
     streamRef.current.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
   }, []);
 
   const startCamera = useCallback(async () => {
     stopCamera();
+    setLoading(true);
+    setError("");
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: {
-            ideal: cameraFacing,
-          },
+          facingMode: { ideal: cameraFacing },
         },
         audio: false,
       });
 
       streamRef.current = stream;
-
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
-
       setLoading(false);
-      setError("");
-
     } catch (err) {
       console.error(err);
       setLoading(false);
@@ -63,10 +76,7 @@ export default function Capture() {
   }, [cameraFacing, stopCamera]);
 
   useEffect(() => {
-    // Camera startup synchronizes with browser media APIs and updates loading/error state.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     startCamera();
-
     return () => stopCamera();
   }, [startCamera, stopCamera]);
 
@@ -78,16 +88,47 @@ export default function Capture() {
 
   function showSuccess(message) {
     setSuccessMessage(message);
-
-    setTimeout(() => {
-      setSuccessMessage("");
-    }, 2000);
+    setTimeout(() => setSuccessMessage(""), 2000);
   }
 
+  // ---------- Handlers for enlarged photo & book flow ----------
+  const handlePhotoClick = (photo) => {
+    setEnlargedPhoto(photo);
+  };
+
+  const closeEnlarged = () => {
+    setEnlargedPhoto(null);
+    setShowBookSelector(false);
+    setSelectedBookId(null);
+  };
+
+  const handleAddToBook = () => {
+    setShowBookSelector(true);
+  };
+
+  const handleBookSelect = (bookId) => {
+    setSelectedBookId(bookId);
+    setShowBookSelector(false);
+    setShowAddMemory(true);
+    setEnlargedPhoto(null); // close enlarged overlay
+  };
+
+  const handleMemorySave = (memory) => {
+    addMemory(memory);
+    showSuccess("Memory preserved ✨");
+    setShowAddMemory(false);
+    setSelectedBookId(null);
+  };
+
+  const handleMemoryCancel = () => {
+    setShowAddMemory(false);
+    setSelectedBookId(null);
+  };
+
+  // ---------- Render ----------
   return (
     <div className="fixed inset-0 bg-black">
-
-      {/* Camera */}
+      {/* Camera video */}
       <video
         ref={videoRef}
         autoPlay
@@ -103,86 +144,46 @@ export default function Capture() {
           className="absolute inset-0 z-50 bg-white pointer-events-none"
         />
       )}
-      {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
 
-      {/* Top Bar */}
-      <TopBar
-        navigate={navigate}
-        flipCamera={flipCamera}
-      />
+      <TopBar navigate={navigate} flipCamera={flipCamera} />
 
-      {/* Bottom Controls */}
-      <div className="absolute bottom-10 left-0 right-0">
-
-        <motion.p
-          animate={{
-            opacity: [0.4, 1, 0.4],
+      {/* Capture button */}
+      <div className="absolute bottom-10 left-0 right-0 flex items-center justify-center">
+        <Photo
+          videoRef={videoRef}
+          flash={flash}
+          setFlash={setFlash}
+          setCapture={(image) => {
+            setPhotos((prev) => {
+              const updated = [
+                {
+                  id: crypto.randomUUID(),
+                  image,
+                  date: "Just Now",
+                },
+                ...prev,
+              ];
+              return updated.slice(0, 2);
+            });
           }}
-          transition={{
-            repeat: Infinity,
-            duration: 2,
-          }}
-          className="mb-5 text-center text-sm text-white/70"
-        >
-          Hold 🎤 to record • Release to save
-        </motion.p>
-
-        <div className="flex items-center justify-center gap-10">
-
-          <VoiceRecorder
-            streamRef={streamRef}
-            stopCamera={stopCamera}
-            startCamera={startCamera}
-            showSuccess={showSuccess}
-          />
-
-          <Photo
-            videoRef={videoRef}
-            flash={flash}
-            setFlash={setFlash}
-            setCapture={(image) => {
-              setPhotos((prev) => {
-                const updated = [
-                  {
-                    id: crypto.randomUUID(),
-                    image,
-                    date: "Just Now",
-                  },
-                  ...prev,
-                ];
-
-                return updated.slice(0, 2);
-              });
-            }}
-          />
-          <VideoRecorder
-            streamRef={streamRef}
-            showSuccess={showSuccess}
-          />
-
-        </div>
-
+        />
       </div>
 
-      {/* Photo Preview */}
-      <PolaroidStack photos={photos} />
+      {/* Polaroid stack – clickable */}
+      <PolaroidStack photos={photos} onPhotoClick={handlePhotoClick} />
 
-      {/* Loading */}
+      {/* Loading / Error / Success */}
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center text-white">
           Opening Camera...
         </div>
       )}
-
-      {/* Error */}
       {error && (
         <div className="absolute inset-0 flex items-center justify-center text-red-500">
           {error}
         </div>
       )}
-
-      {/* Success Toast */}
       {successMessage && (
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -194,6 +195,98 @@ export default function Capture() {
         </motion.div>
       )}
 
+      {/* Enlarged Photo Overlay */}
+      <AnimatePresence>
+        {enlargedPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm"
+            onClick={closeEnlarged}
+          >
+            <motion.div
+              initial={{ scale: 0.8, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: 20 }}
+              className="bg-white rounded-2xl p-4 max-w-lg w-full shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={enlargedPhoto.image}
+                alt="Captured moment"
+                className="w-full aspect-square object-cover rounded-xl"
+              />
+              <div className="mt-4 flex flex-wrap gap-3 justify-end">
+                <button
+                  onClick={closeEnlarged}
+                  className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleAddToBook}
+                  className="px-5 py-2 bg-pink-500 text-white text-sm font-semibold rounded-full hover:bg-pink-600 transition"
+                >
+                  Add to Book
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Book Selector */}
+      <AnimatePresence>
+        {showBookSelector && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4"
+            onClick={() => setShowBookSelector(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 10 }}
+              className="bg-white rounded-2xl p-6 max-w-sm w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold text-ink mb-4">Choose a Book</h3>
+              <ul className="space-y-2">
+                {books.map((book) => (
+                  <li key={book.id}>
+                    <button
+                      onClick={() => handleBookSelect(book.id)}
+                      className="w-full text-left px-4 py-3 rounded-xl border border-beige hover:bg-pink-50 transition"
+                    >
+                      {book.title}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => setShowBookSelector(false)}
+                className="mt-4 text-sm text-gray-400 hover:text-gray-600"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* AddMemoryModal with pre-filled image */}
+      {showAddMemory && selectedBookId && (
+        <AddMemoryModal
+          isOpen={showAddMemory}
+          onClose={handleMemoryCancel}
+          onSave={handleMemorySave}
+          bookId={selectedBookId}
+          initialImages={enlargedPhoto ? [enlargedPhoto.image] : []}
+        />
+      )}
     </div>
   );
 }

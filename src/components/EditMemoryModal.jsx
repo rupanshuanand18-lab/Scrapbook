@@ -1,29 +1,34 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Calendar, Smile } from 'lucide-react'
 import VisualEditorShell from './VisualEditorShell'
 import ImageCanvas from './ImageCanvas'
 import { moods } from '../data/mockData'
 
-export default function AddMemoryModal({ isOpen, onClose, onSave, bookId, initialImages = [] }) {
+export default function EditMemoryModal({ isOpen, onClose, onSave, memory }) {
   const [title, setTitle] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState('')
   const [mood, setMood] = useState('happy')
   const [description, setDescription] = useState('')
   const [images, setImages] = useState([])
 
-  // 1. Keep a ref to the latest initialImages prop
-  const initialImagesRef = useRef(initialImages);
+  // Reset form when modal opens with a memory
   useEffect(() => {
-    initialImagesRef.current = initialImages || [];
-  }, [initialImages]);
-
-  // 2. Only set images when modal opens, using the ref value
-  useEffect(() => {
-    if (isOpen) {
-      setImages(initialImagesRef.current);
+    if (isOpen && memory) {
+      setTitle(memory.title || '')
+      setDate(memory.date || new Date().toISOString().split('T')[0])
+      setMood(memory.mood || 'happy')
+      setDescription(memory.description || '')
+      setImages(memory.images || [])
+    } else if (isOpen && !memory) {
+      // Reset for new memory
+      setTitle('')
+      setDate(new Date().toISOString().split('T')[0])
+      setMood('happy')
+      setDescription('')
+      setImages([])
     }
-  }, [isOpen]); // Only depends on isOpen
+  }, [isOpen, memory])
 
   const reset = () => {
     setTitle('')
@@ -36,14 +41,11 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, bookId, initia
   const handleSave = () => {
     const memoryTitle = title.trim() || 'Untitled Memory'
     onSave({
-      bookId,
       title: memoryTitle,
       date,
       mood,
       description: description.trim(),
-      images: images.length > 0
-        ? images
-        : ['https://images.unsplash.com/photo-1493612276216-ee3925520721?w=600&h=400&fit=crop'],
+      images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1493612276216-ee3925520721?w=600&h=400&fit=crop'],
     })
     reset()
     onClose()
@@ -58,9 +60,9 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, bookId, initia
     <VisualEditorShell
       isOpen={isOpen}
       onClose={handleClose}
-      title="Capture a Moment"
+      title="Edit This Moment"
       onSave={handleSave}
-      saveLabel="Preserve Memory"
+      saveLabel="Update Memory"
     >
       <motion.div
         initial={{ opacity: 0, y: 16 }}

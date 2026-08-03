@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion'
+import { Pencil, Trash2 } from 'lucide-react'
 import MoodBadge from './MoodBadge'
+import ImageCarousel from './ImageCarousel'
 
-export default function MemoryCard({ memory, index = 0 }) {
+export default function MemoryCard({ memory, index = 0, onEdit, onDelete }) {
   const isLeft = index % 2 === 0
   const rotationDegrees = index % 2 === 0 ? -1.8 : 1.6
 
@@ -11,32 +13,60 @@ export default function MemoryCard({ memory, index = 0 }) {
       whileInView={{ opacity: 1, x: 0, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      className={`
-        relative flex w-full mb-20 sm:mb-24
-        ${isLeft ? 'justify-start' : 'justify-end'}
-      `}
+      className={`relative flex w-full mb-20 sm:mb-24 ${isLeft ? 'justify-start' : 'justify-end'
+        }`}
     >
-      <div className={`w-full max-w-lg ${isLeft ? 'pr-8 sm:pr-24' : 'pl-8 sm:pl-24'}`}>
+      <div
+        className={`w-full max-w-lg ${isLeft ? 'pr-8 sm:pr-24' : 'pl-8 sm:pl-24'
+          }`}
+      >
         <motion.div
           whileHover={{ y: -8, rotate: rotationDegrees * 0.4, scale: 1.012 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
           className="relative polaroid-frame p-5 pb-10 rounded-sm flex flex-col paper-fold-corner"
           style={{ rotate: `${rotationDegrees}deg` }}
         >
+          {/* Edit/Delete buttons - visible on all screen sizes */}
+          <div className="absolute top-3 right-3 z-30 flex gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onEdit?.()
+              }}
+              className="p-2 bg-paper/90 hover:bg-pink-accent/90 rounded-full shadow-md backdrop-blur-sm transition-colors"
+              title="Edit memory"
+              aria-label="Edit memory"
+            >
+              <Pencil className="w-4 h-4 text-ink" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete?.()
+              }}
+              className="p-2 bg-paper/90 hover:bg-red-500/90 rounded-full shadow-md backdrop-blur-sm transition-colors"
+              title="Delete memory"
+              aria-label="Delete memory"
+            >
+              <Trash2 className="w-4 h-4 text-ink" />
+            </button>
+          </div>
+
           <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-24 h-5 washi-tape-accent z-20 pointer-events-none rotate-[1.5deg] opacity-85" />
 
+          {/* Image Carousel */}
           {memory.images?.length > 0 && (
-            <div className={`grid gap-2.5 rounded-xs overflow-hidden border border-beige/35 ${memory.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-              {memory.images.map((img, i) => (
-                <div key={i} className="aspect-square overflow-hidden bg-cream-dark/25 relative group">
-                  <img
-                    src={img}
-                    alt=""
-                    className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-800 ease-out"
-                    loading="lazy"
-                  />
-                </div>
-              ))}
+            <div className="rounded-xs overflow-hidden border border-beige/35">
+              <ImageCarousel
+                images={memory.images}
+                aspect="4/3"
+                rounded="rounded-2xl"
+                showCounter={true}
+                showDots={false}
+                counterPosition="bottom-right"
+                arrowVariant="modern"
+                className="cursor-pointer"
+              />
             </div>
           )}
 
@@ -51,11 +81,9 @@ export default function MemoryCard({ memory, index = 0 }) {
               </div>
               <MoodBadge moodId={memory.mood} size="sm" />
             </div>
-
             <h3 className="font-display text-2xl sm:text-[1.65rem] font-semibold text-ink leading-tight mb-3">
               {memory.title}
             </h3>
-
             <p className="text-ink-muted text-sm leading-relaxed font-sans">
               {memory.description}
             </p>
