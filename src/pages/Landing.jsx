@@ -1,20 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { BookOpen, Heart, Users, Compass, Home, Sparkles, ChevronRight } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { BookOpen, Heart, Users, Compass, Home, Sparkles, ChevronRight, Star } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Button from '../components/ui/Button'
 import ThemeCard from '../components/ThemeCard'
 import { features, themes, previewBooks } from '../data/mockData'
 
 const floatingPhotos = [
-  { src: 'https://www.istockphoto.com/photo/a-view-up-into-the-trees-direction-sky-gm1317323736-404791748', x: '6%', y: '20%', delay: 0, rotate: -12 },
-  { src: 'https://images.unsplash.com/photo-1522673605300-519db4893ebf?w=140&h=140&fit=crop', x: '86%', y: '14%', delay: 0.5, rotate: 9 },
-  { src: 'https://images.unsplash.com/photo-1493612276216-ee3925520721?w=150&h=150&fit=crop', x: '80%', y: '66%', delay: 1, rotate: -7 },
-  { src: 'https://images.unsplash.com/photo-1516589178581-6ec78340e8b0?w=140&h=140&fit=crop', x: '4%', y: '60%', delay: 1.5, rotate: 14 },
+  { src: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=140&h=140&fit=crop', x: '4%', y: '18%', delay: 0, rotate: -12, caption: 'summer daze' },
+  { src: 'https://images.unsplash.com/photo-1522673605300-519db4893ebf?w=140&h=140&fit=crop', x: '85%', y: '12%', delay: 0.5, rotate: 9, caption: 'roadtrips ✨' },
+  { src: 'https://images.unsplash.com/photo-1493612276216-ee3925520721?w=150&h=150&fit=crop', x: '81%', y: '62%', delay: 1, rotate: -7, caption: 'late nights' },
+  { src: 'https://images.unsplash.com/photo-1516589178581-6ec78340e8b0?w=140&h=140&fit=crop', x: '6%', y: '58%', delay: 1.5, rotate: 14, caption: 'coffee & notes' },
 ]
 
-const stickers = ['💕', '✨', '📸', '🌸', '⭐']
+const liveActivityStickers = ['💕', '✨', '📸', '🌸', '⭐', '💌', '🌿']
 
 const iconMap = {
   personal: BookOpen,
@@ -29,54 +29,96 @@ export default function Landing() {
   const navigate = useNavigate()
   const [selectedPreviewTheme, setSelectedPreviewTheme] = useState(themes[2])
 
+  // Subtle automatic rotation of theme showcase to give "alive" motion
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSelectedPreviewTheme((prev) => {
+        const currentIndex = themes.findIndex(t => t.id === prev.id)
+        const nextIndex = (currentIndex + 1) % themes.length
+        return themes[nextIndex]
+      })
+    }, 6000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Filter out the College Memory book and map remaining preview books into shelf items
+  const filteredBooks = previewBooks.filter(b => b.title.toLowerCase() !== 'college memories' && !b.title.toLowerCase().includes('college'));
+  const displayItems = filteredBooks.map((b, idx) => ({ ...b, id: idx }));
+  
+  const chunkedBooks = []
+  for (let i = 0; i < displayItems.length; i += 3) {
+    chunkedBooks.push(displayItems.slice(i, i + 3))
+  }
+
   return (
-    <div className="min-h-screen paper-texture overflow-hidden">
+    <div className="min-h-screen paper-texture overflow-hidden relative selection:bg-pink-accent/20">
+      {/* Luxury Ambient Background Layers with Enhanced Pulse */}
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.015] mix-blend-overlay bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:20px_20px]" />
+        
+        {/* Dynamic Glowing Aurora Orbs */}
+        <motion.div 
+          animate={{ opacity: [0.05, 0.12, 0.05], scale: [1, 1.08, 1], x: [0, 30, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -top-40 -left-40 w-[750px] h-[750px] bg-gradient-to-br from-pink-300/30 via-gold/10 to-transparent rounded-full blur-[100px]"
+        />
+        <motion.div 
+          animate={{ opacity: [0.04, 0.1, 0.04], scale: [1.02, 0.95, 1.02], y: [0, -40, 0] }}
+          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+          className="absolute top-1/3 -right-40 w-[650px] h-[650px] bg-gradient-to-bl from-amber-200/20 via-pink-200/10 to-transparent rounded-full blur-[130px]"
+        />
+
+        {/* Floating Particles */}
+        {[
+          { top: '15%', left: '12%', size: '3px', duration: 12, delay: 0 },
+          { top: '28%', left: '88%', size: '2px', duration: 16, delay: 2 },
+          { top: '48%', left: '22%', size: '3.5px', duration: 20, delay: 1 },
+          { top: '75%', left: '78%', size: '2px', duration: 14, delay: 3 },
+        ].map((particle, i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full bg-pink-accent/20 backdrop-blur-[1px]"
+            style={{ top: particle.top, left: particle.left, width: particle.size, height: particle.size }}
+            animate={{ y: [0, -35, 0], x: [0, i % 2 === 0 ? 15 : -15, 0], opacity: [0.1, 0.6, 0.1] }}
+            transition={{ duration: particle.duration, repeat: Infinity, ease: 'easeInOut', delay: particle.delay }}
+          />
+        ))}
+      </div>
+
       <Navbar transparent />
 
-      {/* Hero */}
-      <section className="relative min-h-screen flex items-center pt-28 pb-24 px-5 sm:px-8 lg:px-10">
+      {/* Hero Section */}
+      <section className="relative min-h-screen flex items-center pt-28 pb-24 px-5 sm:px-8 lg:px-10 z-10">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.div
-            animate={{ scale: [1, 1.06, 1], opacity: [0.35, 0.55, 0.35] }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute top-[15%] left-[20%] w-[550px] h-[550px] sunlight-orb rounded-full blur-3xl"
-          />
-          <motion.div
-            animate={{ scale: [1, 1.1, 1], opacity: [0.2, 0.38, 0.2] }}
-            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-            className="absolute bottom-[20%] right-[15%] w-[450px] h-[450px] bg-lavender/15 rounded-full blur-3xl"
-          />
-
+          {/* Floating Polaroids with Interactive Hover Float */}
           {floatingPhotos.map((photo, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, scale: 0.75, rotate: photo.rotate }}
-              animate={{ opacity: 0.9, scale: 1, y: [0, -14, 0] }}
+              initial={{ opacity: 0, scale: 0.8, rotate: photo.rotate }}
+              animate={{ opacity: 1, scale: 1, y: [0, -18, 0] }}
               transition={{
-                opacity: { delay: photo.delay, duration: 1 },
-                scale: { delay: photo.delay, duration: 1 },
-                y: { delay: photo.delay + 1, duration: 6 + i * 0.5, repeat: Infinity, ease: 'easeInOut' },
+                opacity: { delay: photo.delay, duration: 0.8 },
+                y: { delay: photo.delay + 0.5, duration: 5 + i * 0.8, repeat: Infinity, ease: 'easeInOut' },
               }}
-              className="absolute hidden lg:block"
+              whileHover={{ scale: 1.1, rotate: 0, zIndex: 50 }}
+              className="absolute hidden lg:block cursor-pointer shadow-lg transition-shadow"
               style={{ left: photo.x, top: photo.y }}
             >
-              <div
-                className="w-28 h-36 p-2.5 pb-7 polaroid-frame rounded-sm"
-                style={{ transform: `rotate(${photo.rotate}deg)` }}
-              >
-                <img src={photo.src} alt="" className="w-full h-full object-cover rounded-sm border border-beige/30" />
-                <p className="font-handwritten text-sm text-center mt-2 text-ink-muted/70">a moment</p>
+              <div className="w-32 h-40 p-2.5 pb-8 polaroid-frame rounded-sm bg-white">
+                <img src={photo.src} alt="" className="w-full h-28 object-cover rounded-sm border border-beige/30" />
+                <p className="font-handwritten text-xs text-center mt-2 text-ink-muted">{photo.caption}</p>
               </div>
             </motion.div>
           ))}
 
-          {stickers.map((s, i) => (
+          {/* Drifting Stickers */}
+          {liveActivityStickers.map((s, i) => (
             <motion.span
               key={i}
-              animate={{ y: [0, -10, 0], rotate: [0, 6, -6, 0] }}
-              transition={{ duration: 5 + i, repeat: Infinity, delay: i * 0.6, ease: 'easeInOut' }}
-              className="absolute text-2xl sm:text-3xl select-none opacity-75 hidden sm:block"
-              style={{ left: `${10 + i * 18}%`, top: `${26 + (i % 3) * 20}%` }}
+              animate={{ y: [0, -15, 0], rotate: [0, 12, -12, 0], scale: [1, 1.1, 1] }}
+              transition={{ duration: 4 + i, repeat: Infinity, delay: i * 0.4, ease: 'easeInOut' }}
+              className="absolute text-2xl sm:text-3xl select-none opacity-80 hidden sm:block pointer-events-none"
+              style={{ left: `${8 + i * 13}%`, top: `${22 + (i % 3) * 22}%` }}
             >
               {s}
             </motion.span>
@@ -85,30 +127,32 @@ export default function Landing() {
 
         <div className="max-w-7xl mx-auto w-full grid lg:grid-cols-12 gap-16 lg:gap-12 items-center relative z-10">
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             className="lg:col-span-7 text-center lg:text-left"
           >
-            <motion.span
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-soft-pink/12 border border-pink-accent/20 text-pink-accent text-[10px] font-semibold uppercase tracking-[0.2em] mb-8 shadow-sm"
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-pink-500/10 border border-pink-accent/30 text-pink-accent text-xs font-semibold uppercase tracking-[0.2em] mb-8 shadow-sm backdrop-blur-md"
             >
-              <Sparkles className="w-3 h-3" /> A place where memories belong
-            </motion.span>
+              <Sparkles className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '4s' }} /> 
+              <span>Live Collaborative Scrapbooking</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-1" />
+            </motion.div>
 
             <h1 className="font-display text-[2.75rem] sm:text-5xl lg:text-[3.75rem] xl:text-[4.25rem] font-semibold text-ink leading-[1.08] mb-8 tracking-tight">
-              These are memories<br className="hidden sm:block" /> worth keeping forever.
+              These are memories<br className="hidden sm:block" /> worth keeping <span className="text-pink-accent italic">forever</span>.
             </h1>
 
             <p className="text-base sm:text-lg text-ink-muted leading-relaxed mb-10 max-w-lg mx-auto lg:mx-0 font-sans">
-              Not another app. A handmade digital scrapbook — where polaroids, handwritten notes, and shared stories come alive on a cozy wooden bookshelf.
+              Not another cold photo app. A warm, handmade digital sanctuary where polaroids, handwritten notes, and shared stories come alive on a cozy wooden bookshelf.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button size="lg" onClick={() => navigate('/signup')}>
+              <Button size="lg" onClick={() => navigate('/signup')} className="shadow-lg shadow-pink-accent/20 hover:scale-105 transition-transform">
                 Open Your First Volume
               </Button>
               <Button size="lg" variant="secondary" onClick={() => document.getElementById('bookshelf')?.scrollIntoView({ behavior: 'smooth' })}>
@@ -116,101 +160,110 @@ export default function Landing() {
               </Button>
             </div>
 
-            <p className="font-handwritten text-xl text-ink-muted/60 mt-8 hidden lg:block rotate-[-2deg]">
-              est. whenever your story began ✨
-            </p>
+            {/* Live Social Proof Badge */}
+            <div className="mt-10 flex items-center justify-center lg:justify-start gap-4 text-xs text-ink-muted font-sans">
+              <div className="flex -space-x-2">
+                <img className="w-8 h-8 rounded-full border-2 border-white object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop" alt="User" />
+                <img className="w-8 h-8 rounded-full border-2 border-white object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" alt="User" />
+                <img className="w-8 h-8 rounded-full border-2 border-white object-cover" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" alt="User" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1 text-amber-500">
+                  {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-current" />)}
+                </div>
+                <p className="font-medium text-ink mt-0.5">Loved by 12,500+ memory keepers</p>
+              </div>
+            </div>
           </motion.div>
 
-          {/* 3D Scrapbook Mockup */}
+          {/* Interactive 3D Book Mockup with Live Theme Preview */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
             className="lg:col-span-5 flex justify-center perspective-[1400px]"
           >
             <motion.div
-              animate={{ rotateY: [-6, 8, -6], y: [0, -8, 0] }}
-              transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+              animate={{ rotateY: [-4, 6, -4], y: [0, -10, 0] }}
+              transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
               className="relative cursor-pointer group"
               style={{ transformStyle: 'preserve-3d' }}
-              whileHover={{ rotateY: -18, scale: 1.02 }}
+              whileHover={{ rotateY: -15, scale: 1.04 }}
             >
-              <div
-                className="w-64 sm:w-[19rem] h-[22rem] sm:h-[26rem] rounded-r-2xl rounded-l shadow-book group-hover:shadow-book-hover transition-all duration-500 border-l-[12px] border-warm-brown relative overflow-hidden sunlight-glow"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${selectedPreviewTheme.gradient}`} />
-                <div className="absolute inset-0 opacity-20"
-                  style={{
-                    backgroundImage: selectedPreviewTheme.pattern === 'floral'
-                      ? 'radial-gradient(circle at 30% 40%, rgba(255,255,255,0.5) 0%, transparent 50%)'
-                      : selectedPreviewTheme.pattern === 'stars'
-                      ? 'radial-gradient(2px 2px at 20% 30%, white 50%, transparent 50%)'
-                      : 'none'
-                  }}
-                />
+              <div className="w-64 sm:w-[20rem] h-[24rem] sm:h-[28rem] rounded-r-2xl rounded-l shadow-2xl group-hover:shadow-book-hover transition-all duration-500 border-l-[14px] border-warm-brown relative overflow-hidden sunlight-glow">
+                <AnimatePresence mode="wait">
+                  <motion.div 
+                    key={selectedPreviewTheme.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className={`absolute inset-0 bg-gradient-to-br ${selectedPreviewTheme.gradient}`} 
+                  />
+                </AnimatePresence>
 
-                <div className="absolute top-12 left-14 w-28 h-6 washi-tape-accent pointer-events-none opacity-85" />
+                <div className="absolute top-12 left-14 w-28 h-6 washi-tape-accent pointer-events-none opacity-85 shadow-sm" />
 
                 <div className="absolute bottom-10 left-10 right-10 z-10">
-                  <span className="text-[9px] tracking-[0.2em] font-semibold uppercase text-ink/70 bg-paper/65 backdrop-blur-sm px-3 py-1 rounded-full border border-beige/50">
-                    {selectedPreviewTheme.name}
-                  </span>
+                  <motion.span 
+                    key={selectedPreviewTheme.name}
+                    initial={{ y: 5, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="text-[10px] tracking-[0.2em] font-semibold uppercase text-ink/80 bg-paper/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-beige/60 shadow-sm inline-block"
+                  >
+                    Theme: {selectedPreviewTheme.name}
+                  </motion.span>
                   <h3 className="font-display font-semibold text-ink text-3xl sm:text-4xl leading-tight mt-3 drop-shadow-sm">
                     Our Story
                   </h3>
-                  <span className="font-handwritten text-lg text-ink/75 bg-paper/80 px-3 py-1 border border-beige/40 rounded shadow-sm rotate-[2deg] inline-block mt-3 font-bold">
-                    est. 2026
+                  <span className="font-handwritten text-lg text-ink/85 bg-paper/90 px-3 py-1 border border-beige/40 rounded shadow-sm rotate-[2deg] inline-block mt-3 font-bold">
+                    est. 2026 ✨
                   </span>
                 </div>
               </div>
 
-              <div className="absolute -left-2 top-0 w-4 h-4 border-t-2 border-l-2 border-gold rounded-tl-sm" />
-              <div className="absolute -left-2 bottom-0 w-4 h-4 border-b-2 border-l-2 border-gold rounded-bl-sm" />
-              <div className="absolute -right-2 top-0 w-4 h-4 border-t-2 border-r-2 border-gold rounded-tr-sm" />
-              <div className="absolute -right-2 bottom-0 w-4 h-4 border-b-2 border-r-2 border-gold rounded-br-sm" />
+              {/* Decorative Corner Accents */}
+              <div className="absolute -left-3 top-0 w-5 h-5 border-t-2 border-l-2 border-gold rounded-tl-sm" />
+              <div className="absolute -left-3 bottom-0 w-5 h-5 border-b-2 border-l-2 border-gold rounded-bl-sm" />
+              <div className="absolute -right-3 top-0 w-5 h-5 border-t-2 border-r-2 border-gold rounded-tr-sm" />
+              <div className="absolute -right-3 bottom-0 w-5 h-5 border-b-2 border-r-2 border-gold rounded-br-sm" />
 
+              {/* Orbiting mini-cards */}
               <motion.div
-                animate={{ rotate: [-4, 2, -4] }}
-                transition={{ duration: 5, repeat: Infinity }}
-                className="absolute -top-8 -right-8 w-28 h-32 p-2 pb-7 polaroid-frame -z-10 overflow-hidden"
+                animate={{ rotate: [-6, 3, -6], y: [0, 8, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute -top-10 -right-10 w-28 h-32 p-2 pb-7 polaroid-frame -z-10 bg-white shadow-lg overflow-hidden"
               >
-                <img src="https://images.unsplash.com/photo-1522673605300-519db4893ebf?w=120&h=120&fit=crop" alt="" className="w-full h-full object-cover rounded-sm border border-beige/15" />
-              </motion.div>
-              <motion.div
-                animate={{ rotate: [5, -3, 5] }}
-                transition={{ duration: 6, repeat: Infinity }}
-                className="absolute -bottom-10 -left-8 w-24 h-28 p-2 pb-7 polaroid-frame -z-10 overflow-hidden"
-              >
-                <img src="https://images.unsplash.com/photo-1493612276216-ee3925520721?w=100&h=100&fit=crop" alt="" className="w-full h-full object-cover rounded-sm border border-beige/15" />
+                <img src="https://images.unsplash.com/photo-1522673605300-519db4893ebf?w=120&h=120&fit=crop" alt="" className="w-full h-20 object-cover rounded-sm" />
+                <p className="font-handwritten text-[10px] text-center mt-1">memories</p>
               </motion.div>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="section-breathe px-5 sm:px-8 lg:px-10 bg-parchment/30 border-y border-beige/35">
+      {/* Features Grid with Hover Animations */}
+      <section id="features" className="section-breathe px-5 sm:px-8 lg:px-10 bg-parchment/40 border-y border-beige/40 relative z-10 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.7 }}
-            className="text-center mb-24"
+            className="text-center mb-20"
           >
-            <p className="font-handwritten text-2xl text-pink-accent/70 mb-3">every chapter of life</p>
+            <p className="font-handwritten text-2xl text-pink-accent mb-3">every chapter of life</p>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold text-ink mb-6 leading-tight">
-              Journals for Every Chapter of Life
+              Journals Crafted for Your World
             </h2>
             <p className="text-ink-muted max-w-lg mx-auto text-sm sm:text-base leading-relaxed font-sans">
               Travel keepsakes, love letters, family heirlooms, or quiet personal reflections — each volume tells a story only you can write.
             </p>
           </motion.div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 sm:gap-12">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
             {features.map((f, i) => {
               const Icon = iconMap[f.id] || Sparkles
-              const rotation = (i % 2 === 0 ? -1.2 : 1.2)
               return (
                 <motion.div
                   key={f.id}
@@ -218,16 +271,15 @@ export default function Landing() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-40px' }}
                   transition={{ delay: i * 0.1, duration: 0.6 }}
-                  whileHover={{ y: -10, rotate: rotation * 0.4 }}
-                  className="scrapbook-card rounded-2xl p-9 flex flex-col items-start relative overflow-hidden paper-fold-corner"
-                  style={{ rotate: `${rotation}deg` }}
+                  whileHover={{ y: -12, scale: 1.02 }}
+                  className="scrapbook-card rounded-2xl p-8 flex flex-col items-start relative overflow-hidden paper-fold-corner group shadow-md hover:shadow-xl transition-all"
                 >
-                  <div className="absolute top-0 right-10 w-12 h-4 washi-tape pointer-events-none opacity-70" />
+                  <div className="absolute top-0 right-10 w-12 h-4 washi-tape pointer-events-none opacity-80 group-hover:scale-105 transition-transform" />
 
-                  <div className="w-12 h-12 rounded-2xl bg-cream-dark/50 flex items-center justify-center mb-7 text-pink-accent shadow-inner-sm border border-beige/30">
-                    <Icon className="w-5 h-5" />
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500/10 to-amber-500/10 flex items-center justify-center mb-6 text-pink-accent shadow-inner border border-beige/40 group-hover:rotate-6 transition-transform">
+                    <Icon className="w-6 h-6" />
                   </div>
-                  <h3 className="font-display text-xl font-semibold text-ink mb-3">{f.title}</h3>
+                  <h3 className="font-display text-xl font-semibold text-ink mb-3 group-hover:text-pink-accent transition-colors">{f.title}</h3>
                   <p className="text-ink-muted text-sm leading-relaxed font-sans">{f.description}</p>
                 </motion.div>
               )
@@ -236,83 +288,98 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Bookshelf Preview */}
-      <section id="bookshelf" className="section-breathe px-5 sm:px-8 lg:px-10">
+      {/* Handcrafted Bookshelf Preview (Single Shelf Row) */}
+      <section id="bookshelf" className="section-breathe px-5 sm:px-8 lg:px-10 relative z-10">
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
-            className="text-center mb-24"
+            className="text-center mb-20"
           >
-            <p className="font-handwritten text-2xl text-pink-accent/70 mb-3">your collection awaits</p>
+            <p className="font-handwritten text-2xl text-pink-accent mb-3">your collection awaits</p>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold text-ink mb-6">
               Your Handcrafted Bookshelf
             </h2>
             <p className="text-ink-muted text-sm sm:text-base font-sans max-w-md mx-auto">
-              Gently pull a volume from the shelf. Each cover holds a chapter of your favorite days.
+              Hover over a volume to pull it off the shelf. Each cover preserves a distinct season of your life.
             </p>
           </motion.div>
 
-          <div className="bookshelf-wood rounded-[36px] p-8 sm:p-14 pt-14 sm:pt-16 relative overflow-hidden">
-            <div className="absolute inset-0 bookshelf-highlight pointer-events-none" />
+          <div className="bg-[#fdfbf7]">
+            <div className="relative bg-gradient-to-b from-[#e8e2d5] via-[#d5ccbc] to-[#bfb5a2] rounded-[50px] sm:rounded-[70px] p-6 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.1),inset_0_2px_6px_rgba(255,255,255,0.7)] border-[6px] sm:border-[8px] border-[#a89d89] overflow-hidden">
+              
+              {/* Warm glow container */}
+              <div className="absolute inset-4 sm:inset-6 rounded-[40px] sm:rounded-[55px] border-[2px] border-yellow-200/90 shadow-[inset_0_0_20px_rgba(253,224,71,0.5),0_0_20px_rgba(250,204,21,0.4)] pointer-events-none z-0" />
 
-            <div className="flex items-end justify-center gap-5 sm:gap-10 flex-wrap relative z-10">
-              {previewBooks.map((book, i) => (
-                <motion.div
-                  key={book.title}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1, duration: 0.6 }}
-                  whileHover={{ y: -28, scale: 1.06, rotate: 0, zIndex: 20 }}
-                  className="relative cursor-pointer perspective-[800px]"
-                  style={{ rotate: `${book.rotation}deg` }}
-                >
-                  <div className="w-24 sm:w-36 aspect-[3/4.2] rounded-r-xl rounded-l overflow-hidden shadow-book hover:shadow-book-hover transition-all duration-400 border-l-[5px] border-black/15">
-                    <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
-                    <div className="absolute left-0 top-0 bottom-0 w-3 bg-gradient-to-r from-black/25 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent opacity-90" />
-                    <div className="absolute bottom-3 left-3 right-3 z-10 text-center">
-                      <p className="text-[10px] text-paper/95 font-semibold truncate font-sans">{book.title}</p>
+              {/* Wood cavity background */}
+              <div className="absolute inset-5 sm:inset-7 bg-gradient-to-r from-[#e3dbcc] via-[#ede6d8] to-[#e3dbcc] rounded-[38px] sm:rounded-[50px] shadow-[inset_0_5px_20px_rgba(0,0,0,0.15)] -z-10" />
+
+              {/* Content (First shelf row only) */}
+              <div className="relative z-10 space-y-4 sm:space-y-8 py-4">
+                {chunkedBooks.slice(0, 1).map((shelf, shelfIndex) => (
+                  <div key={shelfIndex} className="relative pb-8 pt-4 border-b-0 last:pb-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 sm:gap-16 items-center px-6 sm:px-16 lg:px-24 max-w-5xl mx-auto [perspective:1400px]">
+                      {shelf.map((book, i) => (
+                        <div key={book.title} className="flex justify-center group cursor-pointer" onClick={() => navigate('/signup')}>
+                          <motion.div 
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: i * 0.1, duration: 0.6 }}
+                            whileHover={{ y: -20, rotateY: -12, rotate: 0, z: 20, scale: 1.05 }}
+                            className="relative w-[210px] h-[280px] transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(-22deg)_translateY(-10px)_rotateX(2deg)]"
+                          >
+                            <div className="absolute inset-0 w-full h-full rounded-r-2xl rounded-l-md shadow-[15px_20px_35px_rgba(0,0,0,0.35)] overflow-hidden border-t border-r border-b border-beige/40 bg-white">
+                              <img src={book.cover} alt={book.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                              <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/30 via-black/10 to-transparent pointer-events-none z-20" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-90" />
+                              <div className="absolute bottom-3 left-3 right-3 z-10 text-center">
+                                <p className="text-xs text-paper font-semibold truncate font-sans drop-shadow">{book.title}</p>
+                              </div>
+                            </div>
+                            <div className="absolute right-0 top-[4px] w-[16px] h-[calc(100%-8px)] bg-gradient-to-r from-zinc-200 via-zinc-100 to-zinc-300 [transform:rotateY(90deg)_translateZ(202px)] origin-right shadow-[inset_0_0_8px_rgba(0,0,0,0.15)] rounded-r-sm" />
+                          </motion.div>
+                        </div>
+                      ))}
                     </div>
+                    <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-b from-[#b0a390] via-[#8c806e] to-[#6d6252] shadow-[0_6px_12px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)] rounded-full mx-2 sm:mx-6" />
                   </div>
-                </motion.div>
-              ))}
+                ))}
+              </div>
             </div>
-
-            <div className="h-5 mt-8 bg-gradient-to-b from-black/30 via-black/12 to-transparent rounded-b-2xl" />
           </div>
         </div>
       </section>
 
-      {/* Themes */}
-      <section id="themes" className="section-breathe px-5 sm:px-8 lg:px-10 bg-lavender-light/12 border-t border-beige/35">
+      {/* Interactive Themes Selector */}
+      <section id="themes" className="section-breathe px-5 sm:px-8 lg:px-10 bg-lavender-light/15 border-t border-beige/40 relative z-10">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-24"
+            className="text-center mb-20"
           >
-            <p className="font-handwritten text-2xl text-pink-accent/70 mb-3">dress your memories</p>
+            <p className="font-handwritten text-2xl text-pink-accent mb-3">dress your memories</p>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold text-ink mb-6">
               Themes That Mirror Your Heart
             </h2>
             <p className="text-ink-muted text-sm sm:text-base max-w-md mx-auto font-sans">
-              Choose a palette below and watch it breathe life into the journal cover above.
+              Click a palette below to instantly preview it live on the hero journal above.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-7">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6">
             {themes.map((theme, i) => (
               <motion.div
                 key={theme.id}
-                initial={{ opacity: 0, scale: 0.92 }}
+                initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08, duration: 0.5 }}
+                whileHover={{ scale: 1.05 }}
               >
                 <ThemeCard
                   theme={theme}
@@ -328,36 +395,36 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="section-breathe px-5 sm:px-8 lg:px-10">
+      {/* Final Call to Action */}
+      <section className="section-breathe px-5 sm:px-8 lg:px-10 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="max-w-3xl mx-auto text-center scrapbook-card rounded-[40px] p-14 sm:p-24 relative overflow-hidden paper-clip"
-          style={{ rotate: '0.3deg' }}
+          className="max-w-3xl mx-auto text-center scrapbook-card rounded-[40px] p-12 sm:p-20 relative overflow-hidden paper-clip shadow-2xl"
+          style={{ rotate: '0.2deg' }}
         >
-          <div className="absolute top-0 left-0 w-24 h-1 bg-gold/60" />
-          <div className="absolute top-5 left-8 washi-tape-accent w-24 h-5 opacity-80" />
-          <p className="font-handwritten text-xl text-ink-muted/50 absolute bottom-6 right-8 rotate-[-6deg]">begin here →</p>
+          <div className="absolute top-0 left-0 w-32 h-1.5 bg-gradient-to-r from-pink-accent to-gold" />
+          <div className="absolute top-5 left-8 washi-tape-accent w-24 h-5 opacity-90 shadow-sm" />
+          <p className="font-handwritten text-xl text-pink-accent absolute bottom-6 right-8 rotate-[-6deg]">your story starts here →</p>
 
           <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold text-ink mb-6 leading-tight">
-            Begin Your Scrapbook Journey
+            Begin Your Scrapbook Journey Today
           </h2>
-          <p className="text-ink-muted text-sm sm:text-base mb-12 max-w-md mx-auto leading-relaxed font-sans">
-            Invite someone you love, pin your favorite polaroids, write from the heart — and watch your bookshelf fill with moments that matter.
+          <p className="text-ink-muted text-sm sm:text-base mb-10 max-w-md mx-auto leading-relaxed font-sans">
+            Invite someone you love, pin your favorite polaroids, write from the heart — and fill your shelf with moments that matter.
           </p>
-          <Button size="lg" onClick={() => navigate('/signup')} className="group">
+          <Button size="lg" onClick={() => navigate('/signup')} className="group shadow-xl hover:scale-105 transition-transform">
             <span>Open Your First Volume</span>
             <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
           </Button>
         </motion.div>
       </section>
 
-      <footer className="py-12 text-center text-ink-muted text-xs sm:text-sm border-t border-beige/35">
-        <p className="font-handwritten text-lg text-ink-muted/60 mb-1">made with love</p>
-        <p>© 2026 ScrapBook — where your memories belong.</p>
+      <footer className="py-12 text-center text-ink-muted text-xs sm:text-sm border-t border-beige/40 relative z-10 bg-parchment/20">
+        <p className="font-handwritten text-xl text-pink-accent mb-2">made with love & memories ✨</p>
+        <p>© 2026 ScrapBook — where your memories belong[cite: 1].</p>
       </footer>
     </div>
   )

@@ -11,6 +11,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, bookId, initia
   const [mood, setMood] = useState('happy')
   const [description, setDescription] = useState('')
   const [images, setImages] = useState([])
+  const [editorOpen, setEditorOpen] = useState(false)
 
   // 1. Keep a ref to the latest initialImages prop
   const initialImagesRef = useRef(initialImages);
@@ -18,12 +19,16 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, bookId, initia
     initialImagesRef.current = initialImages || [];
   }, [initialImages]);
 
-  // 2. Only set images when modal opens, using the ref value
+  // 2. Hydrate the canvas each time the modal is opened or receives a new capture preview.
   useEffect(() => {
     if (isOpen) {
-      setImages(initialImagesRef.current);
+      const nextImages = Array.isArray(initialImagesRef.current)
+        ? initialImagesRef.current
+        : [];
+
+      setImages(nextImages);
     }
-  }, [isOpen]); // Only depends on isOpen
+  }, [isOpen, initialImages]);
 
   const reset = () => {
     setTitle('')
@@ -61,6 +66,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, bookId, initia
       title="Capture a Moment"
       onSave={handleSave}
       saveLabel="Preserve Memory"
+      showHeader={!editorOpen}
     >
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -76,6 +82,9 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, bookId, initia
             multiple
             emptyLabel="Drop your polaroid here"
             emptyHint="A photo that holds the feeling of this moment"
+            onEditorOpenChange={setEditorOpen}
+            editorSecondaryActionLabel="Preserve Memory"
+            editorSecondaryAction={handleSave}
           />
         </div>
 

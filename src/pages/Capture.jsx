@@ -6,23 +6,12 @@ import TopBar from "../components/TopBar";
 import Photo from "../components/Photo";
 import PolaroidStack from "../components/PolaroidStack";
 import AddMemoryModal from "../components/AddMemoryModal";
-
-// Replace this mock with your actual books state management
-function useBooks() {
-  const [books] = useState([
-    { id: "book1", title: "Summer 2026" },
-    { id: "book2", title: "Family Moments" },
-  ]);
-  const addMemory = (memory) => {
-    console.log("Memory saved to book", memory);
-    // In a real app, update your global state / backend here
-  };
-  return { books, addMemory };
-}
+import CreateBookModal from "../components/CreateBookModal";
+import { useApp } from "../context/AppContext";
 
 export default function Capture() {
   const navigate = useNavigate();
-  const { books, addMemory } = useBooks();
+  const { books, addBook, addMemory } = useApp();
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -37,13 +26,15 @@ export default function Capture() {
 
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Enlarged preview & AddMemory flow
+  // Enlarged preview & Modals flow
   const [enlargedPhoto, setEnlargedPhoto] = useState(null);
   const [showBookSelector, setShowBookSelector] = useState(false);
   const [selectedBookId, setSelectedBookId] = useState(null);
+  const [selectedCaptureImage, setSelectedCaptureImage] = useState(null);
   const [showAddMemory, setShowAddMemory] = useState(false);
+  const [showCreateBookModal, setShowCreateBookModal] = useState(false); // <-- State for Create Book Modal
 
-  // ---------- Camera functions (restored from original) ----------
+  // ---------- Camera functions ----------
   const stopCamera = useCallback(() => {
     if (!streamRef.current) return;
     streamRef.current.getTracks().forEach((track) => track.stop());
@@ -106,11 +97,18 @@ export default function Capture() {
     setShowBookSelector(true);
   };
 
+  const handleOpenCreateBookModal = () => {
+    setShowBookSelector(false); // Close book selector popup
+    setShowCreateBookModal(true); // Open CreateBookModal
+  };
+
   const handleBookSelect = (bookId) => {
+    const nextSelectedImage = enlargedPhoto?.image ?? null;
+    setSelectedCaptureImage(nextSelectedImage);
     setSelectedBookId(bookId);
     setShowBookSelector(false);
     setShowAddMemory(true);
-    setEnlargedPhoto(null); // close enlarged overlay
+    setEnlargedPhoto(null); // close enlarged overlay after preserving the image
   };
 
   const handleMemorySave = (memory) => {
@@ -118,11 +116,33 @@ export default function Capture() {
     showSuccess("Memory preserved ✨");
     setShowAddMemory(false);
     setSelectedBookId(null);
+    setSelectedCaptureImage(null);
   };
 
   const handleMemoryCancel = () => {
     setShowAddMemory(false);
     setSelectedBookId(null);
+    setSelectedCaptureImage(null);
+  };
+
+  const handleBookCreatedSuccessfully = (newBook) => {
+    const createdBook = addBook(newBook);
+
+    if (selectedCaptureImage) {
+      addMemory({
+        bookId: createdBook.id,
+        title: "Captured moment",
+        date: new Date().toISOString().split("T")[0],
+        mood: "happy",
+        description: "Added from the camera capture.",
+        images: [selectedCaptureImage],
+      });
+    }
+
+    showSuccess("New book created with your photo! ✨");
+    setShowCreateBookModal(false);
+    setEnlargedPhoto(null);
+    setSelectedCaptureImage(null);
   };
 
   // ---------- Render ----------
@@ -236,7 +256,7 @@ export default function Capture() {
         )}
       </AnimatePresence>
 
-      {/* Book Selector */}
+      {/* Book Selector Popup */}
       <AnimatePresence>
         {showBookSelector && (
           <motion.div
@@ -254,7 +274,7 @@ export default function Capture() {
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-lg font-semibold text-ink mb-4">Choose a Book</h3>
-              <ul className="space-y-2">
+              <ul className="space-y-2 mb-6">
                 {books.map((book) => (
                   <li key={book.id}>
                     <button
@@ -266,12 +286,22 @@ export default function Capture() {
                   </li>
                 ))}
               </ul>
-              <button
-                onClick={() => setShowBookSelector(false)}
-                className="mt-4 text-sm text-gray-400 hover:text-gray-600"
-              >
-                Cancel
-              </button>
+
+              {/* Footer buttons: Cancel on left, New Book on right */}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                <button
+                  onClick={() => setShowBookSelector(false)}
+                  className="text-sm font-medium text-gray-500 hover:text-gray-700 py-2"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleOpenCreateBookModal}
+                  className="px-4 py-2 bg-pink-500 text-white text-sm font-semibold rounded-full hover:bg-pink-600 transition shadow-sm"
+                >
+                  + New Book
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -284,7 +314,16 @@ export default function Capture() {
           onClose={handleMemoryCancel}
           onSave={handleMemorySave}
           bookId={selectedBookId}
-          initialImages={enlargedPhoto ? [enlargedPhoto.image] : []}
+          initialImages={selectedCaptureImage ? [selectedCaptureImage] : []}
+        />
+      )}
+
+      {/* CreateBookModal with pre-filled image */}
+      {showCreateBookModal && (
+        <CreateBookModal
+          isOpen={showCreateBookModal}
+          onClose={() => setShowCreateBookModal(false)}
+          onCreate={handleBookCreatedSuccessfully}
         />
       )}
     </div>

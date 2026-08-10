@@ -1,3 +1,4 @@
+// BookCard.jsx
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { Users, Book } from 'lucide-react'
@@ -7,77 +8,84 @@ export default function BookCard({ book, index = 0, shelf = false }) {
   const theme = getThemeById(book.themeId)
   const shelfRotation = shelf ? (index % 3 === 0 ? -1.2 : index % 3 === 1 ? 0.8 : -0.4) : 0
 
-  const content = (
-    <motion.div
-      initial={{ opacity: 0, y: 28, rotate: shelfRotation }}
-      animate={{ opacity: 1, y: 0, rotate: shelfRotation }}
-      transition={{ delay: index * 0.06, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={{
-        y: -20,
-        rotateY: -12,
-        rotate: 0,
-        z: 20,
-        transition: { duration: 0.35, ease: 'easeOut' }
-      }}
-      className="group cursor-pointer perspective-[1000px] font-sans"
-      style={{ transformStyle: 'preserve-3d' }}
-    >
-      <div
-        className={`
-          relative rounded-r-xl rounded-l shadow-book
-          transition-all duration-400 overflow-hidden
-          group-hover:shadow-book-hover
-          ${shelf ? 'w-full aspect-[3/4.2]' : 'w-full aspect-[3/4.2] max-w-[180px]'}
-        `}
+  return (
+    <Link to={`/books/${book.id}`} className="block h-full w-full">
+      <motion.div
+        initial={{ opacity: 0, y: 28, rotate: shelfRotation }}
+        animate={{ opacity: 1, y: 0, rotate: shelfRotation }}
+        transition={{ delay: index * 0.06, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        className="h-full w-full font-sans [transform-style:preserve-3d]"
       >
-        <img
-          src={book.coverImage}
-          alt={book.title}
-          className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-700 ease-out"
-          loading="lazy"
-        />
+        {/* Single hover source (CSS group-hover) — no more conflicting motion whileHover.
+            Fluid sizing: fills its shelf cell on the shelf, self-sizes standalone. */}
+        <div
+          className={`group relative cursor-pointer [transform-style:preserve-3d] transition-transform duration-500 ease-out hover:[transform:rotateY(-18deg)_rotateX(2deg)_translateY(-12px)_scale(1.02)] ${
+            shelf ? 'aspect-[3/4.2] w-full' : 'mx-auto aspect-[3/4.2] w-full max-w-[180px]'
+          }`}
+        >
+          {/* Ground shadow — anchors the book to the shelf and responds to hover */}
+          <div className="absolute -bottom-3 left-1/2 z-0 h-3 w-4/5 -translate-x-1/2 rounded-[50%] bg-black/25 blur-[5px] transition-all duration-500 group-hover:w-3/5 group-hover:bg-black/20" />
 
-        <div className="absolute left-0 top-0 bottom-0 w-[12px] bg-gradient-to-r from-black/30 via-white/5 to-transparent z-10" />
-        <div className="absolute left-[12px] top-0 bottom-0 w-[2px] bg-black/12 z-10" />
-        <div className="absolute right-0 top-0 bottom-0 w-[4px] bg-beige/50 z-10" />
+          {/* Page block on the right edge — size-independent replacement for the old
+              fixed translateZ(202px) edge, which only worked at 210px width */}
+          <div className="absolute -right-1.5 bottom-1 top-1 z-0 w-2 rounded-r-sm bg-[repeating-linear-gradient(to_bottom,#f8f4e9_0px,#f8f4e9_2px,#ddd5c3_3px)] shadow-[inset_-2px_0_3px_rgba(0,0,0,0.15)]" />
 
-        <div className="absolute left-0 top-0 w-2.5 h-2.5 border-t border-l border-gold/80 rounded-tl-xs z-10" />
-        <div className="absolute left-0 bottom-0 w-2.5 h-2.5 border-b border-l border-gold/80 rounded-bl-xs z-10" />
-        <div className="absolute right-0 top-0 w-2.5 h-2.5 border-t border-r border-gold/80 rounded-tr-xs z-10" />
-        <div className="absolute right-0 bottom-0 w-2.5 h-2.5 border-b border-r border-gold/80 rounded-br-xs z-10" />
+          {/* Cover */}
+          <div className="absolute inset-0 z-10 overflow-hidden rounded-r-xl rounded-l-[3px] border border-black/15 bg-white shadow-[8px_12px_24px_rgba(0,0,0,0.28)] transition-shadow duration-500 group-hover:shadow-[16px_22px_40px_rgba(0,0,0,0.36)]">
+            <img
+              src={book.coverImage}
+              alt={book.title}
+              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              loading="lazy"
+            />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/20 to-transparent opacity-75 group-hover:opacity-90 transition-opacity duration-400" />
+            {/* Spine shading */}
+            <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-[12px] bg-gradient-to-r from-black/30 via-white/5 to-transparent" />
+            <div className="pointer-events-none absolute bottom-0 left-[12px] top-0 z-10 w-[2px] bg-black/10" />
+            <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-[4px] bg-beige/50" />
 
-        <div className="absolute top-3 right-3 z-20">
-          {book.isShared ? (
-            <span className="flex items-center gap-1 bg-paper/92 text-ink text-[8px] uppercase tracking-[0.12em] font-semibold px-2 py-0.5 rounded-xs shadow-sm border border-beige/50">
-              <Users className="w-2.5 h-2.5 text-pink-accent" />
-              <span>Shared</span>
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 bg-paper/92 text-ink text-[8px] uppercase tracking-[0.12em] font-semibold px-2 py-0.5 rounded-xs shadow-sm border border-beige/50">
-              <Book className="w-2.5 h-2.5 text-brown-light" />
-              <span>Personal</span>
-            </span>
-          )}
-        </div>
+            {/* Gold corner ticks */}
+            <div className="pointer-events-none absolute left-0 top-0 z-10 h-2.5 w-2.5 rounded-tl-[2px] border-l border-t border-gold/80" />
+            <div className="pointer-events-none absolute bottom-0 left-0 z-10 h-2.5 w-2.5 rounded-bl-[2px] border-b border-l border-gold/80" />
+            <div className="pointer-events-none absolute right-0 top-0 z-10 h-2.5 w-2.5 rounded-tr-[2px] border-r border-t border-gold/80" />
+            <div className="pointer-events-none absolute bottom-0 right-0 z-10 h-2.5 w-2.5 rounded-br-[2px] border-b border-r border-gold/80" />
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 z-20 flex flex-col justify-end">
-          <p className="font-display font-semibold text-paper text-sm sm:text-base leading-tight line-clamp-2 drop-shadow-md">
-            {book.title}
-          </p>
-          <div className="flex items-center gap-1.5 mt-1.5 opacity-90">
-            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: theme.colors[0] }} />
-            <span className="text-[9px] text-paper/85 font-semibold tracking-[0.15em] uppercase">
-              {theme.name}
-            </span>
+            {/* Legibility gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/20 to-transparent opacity-75 transition-opacity duration-500 group-hover:opacity-90" />
+
+            {/* Shared / Personal badge */}
+            <div className="absolute right-2 top-2 z-20 sm:right-3 sm:top-3">
+              {book.isShared ? (
+                <span className="flex items-center gap-1 rounded-[3px] border border-beige/50 bg-paper/90 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.12em] text-ink shadow-sm backdrop-blur-[2px]">
+                  <Users className="h-2.5 w-2.5 text-pink-accent" />
+                  <span>Shared</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 rounded-[3px] border border-beige/50 bg-paper/90 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.12em] text-ink shadow-sm backdrop-blur-[2px]">
+                  <Book className="h-2.5 w-2.5 text-brown-light" />
+                  <span>Personal</span>
+                </span>
+              )}
+            </div>
+
+            {/* Title + theme — type scales with screen size */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col justify-end p-3 sm:p-4">
+              <p className="line-clamp-2 font-display text-[13px] font-semibold leading-tight text-paper drop-shadow-md sm:text-sm lg:text-base">
+                {book.title}
+              </p>
+              <div className="mt-1.5 flex items-center gap-1.5 opacity-90">
+                <span
+                  className="h-1.5 w-1.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: theme.colors[0] }}
+                />
+                <span className="truncate text-[9px] font-semibold uppercase tracking-[0.15em] text-paper/85">
+                  {theme.name}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-
-
-    </motion.div>
+      </motion.div>
+    </Link>
   )
-
-  return <Link to={`/books/${book.id}`}>{content}</Link>
 }

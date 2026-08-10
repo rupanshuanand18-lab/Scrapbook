@@ -20,6 +20,7 @@ export default function CreateBookModal({ isOpen, onClose, onCreate }) {
   const [type, setType] = useState('personal')
   const [themeId, setThemeId] = useState(themes[0].id)
   const [coverImage, setCoverImage] = useState([])
+  const [editorOpen, setEditorOpen] = useState(false)
 
   const selectedTheme = themes.find((t) => t.id === themeId) || themes[0]
 
@@ -33,14 +34,20 @@ export default function CreateBookModal({ isOpen, onClose, onCreate }) {
 
   const handleSave = () => {
     if (!title.trim()) return
-    onCreate({
+
+    const newBook = {
       title: title.trim(),
       description: description.trim(),
       type,
       themeId,
       coverImage: coverImage[0] || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=560&fit=crop',
       isShared: type !== 'personal',
-    })
+    }
+
+    if (onCreate) {
+      onCreate(newBook)
+    }
+
     reset()
     onClose()
   }
@@ -58,6 +65,7 @@ export default function CreateBookModal({ isOpen, onClose, onCreate }) {
       onSave={handleSave}
       saveLabel="Create Volume"
       saveDisabled={!title.trim()}
+      showHeader={!editorOpen}
     >
       <div className="grid lg:grid-cols-12 gap-8 items-start">
         
@@ -115,6 +123,9 @@ export default function CreateBookModal({ isOpen, onClose, onCreate }) {
               aspect="3/4"
               emptyLabel="Choose a cover photo"
               emptyHint="The face of your story — PNG, JPG, or JPEG"
+              onEditorOpenChange={setEditorOpen}
+              editorSecondaryActionLabel="Create Volume"
+              editorSecondaryAction={handleSave}
             />
           </div>
 

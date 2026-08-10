@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo} from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Flame, FolderOpen, Plus } from 'lucide-react'
 import Navbar from '../components/Navbar'
@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [filter, setFilter] = useState('all')
   const [showCreate, setShowCreate] = useState(false)
   const [buttonPulse, setButtonPulse] = useState(true)
+  const [shelfColumns, setShelfColumns] = useState(3)
 
   const filtered = books.filter((book) => {
     const matchesSearch = book.title.toLowerCase().includes(search.toLowerCase())
@@ -34,11 +35,40 @@ export default function Dashboard() {
   // Add a placeholder "create" item to the beginning of the filtered array
   const displayItems = [{ id: 'add-new', isCreatePlaceholder: true }, ...filtered]
 
-  // Group items into shelves of max 3 (including the add card)
-  const chunkedBooks = []
-  for (let i = 0; i < displayItems.length; i += 3) {
-    chunkedBooks.push(displayItems.slice(i, i + 3))
+  
+useEffect(() => {
+  const updateShelfColumns = () => setShelfColumns(window.innerWidth >= 768 ? 3 : 2)
+  updateShelfColumns()
+  window.addEventListener('resize', updateShelfColumns)
+  return () => window.removeEventListener('resize', updateShelfColumns)
+}, [])
+
+// Group items into shelves of max 3 (including the add card)
+const chunkedBooks = useMemo(() => {
+  const items = [...filtered]
+  if (!search) items.push({ isCreatePlaceholder: true }) // same create-card behaviour as before
+
+  const total = items.length
+  if (total === 0) return []
+
+  // rows needed for this column count…
+  let rowCount = Math.ceil(total / shelfColumns)
+  // …then reduce rows so no row ends up with one lonely book
+  while (rowCount > 1 && Math.floor(total / rowCount) < 2) rowCount -= 1
+
+  // distribute evenly → rows differ by at most one book
+  const base = Math.floor(total / rowCount)
+  const extra = total % rowCount
+  const rows = []
+  let cursor = 0
+  for (let r = 0; r < rowCount; r += 1) {
+    const size = base + (r < extra ? 1 : 0)
+    rows.push(items.slice(cursor, cursor + size))
+    cursor += size
   }
+  return rows
+}, [filtered, search, shelfColumns])
+
 
   const personalCount = books.filter((b) => !b.isShared).length
   const sharedCount = books.filter((b) => b.isShared).length
@@ -169,139 +199,118 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* BOOKSHELF DISPLAY */}
-          <AnimatePresence mode="wait">
-            {filtered.length === 0 && !search ? (
-              <motion.div
-                key="empty-dashboard"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <EmptyState
-                  icon={FolderOpen}
-                  title="No volumes found"
-                  description={
-                    search
-                      ? "We couldn't find a volume matching your search. Try a different title — every story has a name."
-                      : 'Your bookshelf is ready for its first volume. Open a new scrapbook and begin preserving the moments that matter.'
-                  }
-                  actionLabel="Create New Volume"
-                  onAction={() => setShowCreate(true)}
-                />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="shelf-dashboard"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.5 }}
-                className="bg-[#fdfbf7]"
-              >
-                <div className="relative bg-gradient-to-b from-[#e8e2d5] via-[#d5ccbc] to-[#bfb5a2] rounded-[50px] sm:rounded-[70px] p-6 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.1),inset_0_2px_6px_rgba(255,255,255,0.7)] border-[6px] sm:border-[8px] border-[#a89d89] overflow-hidden">
+          {/* BOOKSHELF DISPLAY — paste this section back into your page file (no new features, only visual/responsive fixes) */}
+<AnimatePresence mode="wait">
+  {filtered.length === 0 ? (
+    <motion.div
+      key="empty-dashboard"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <EmptyState
+        icon={FolderOpen}
+        title="No volumes found"
+        description={
+          search
+            ? "We couldn't find a volume matching your search. Try a different title — every story has a name."
+            : 'Your bookshelf is ready for its first volume. Open a new scrapbook and begin preserving the moments that matter.'
+        }
+        actionLabel="Create New Volume"
+        onAction={() => setShowCreate(true)}
+      />
+    </motion.div>
+  ) : (
+    <motion.div
+      key="shelf-dashboard"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -15 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="relative overflow-hidden rounded-[28px] border-[4px] border-[#a89d89] bg-gradient-to-b from-[#e8e2d5] via-[#d5ccbc] to-[#bfb5a2] p-3 shadow-[0_18px_45px_rgba(94,78,52,0.16),inset_0_2px_6px_rgba(255,255,255,0.7)] sm:rounded-[48px] sm:border-[6px] sm:p-7 lg:rounded-[64px] lg:border-[8px] lg:p-10">
 
-                  {/* Warm glow container */}
-                  <div className="absolute inset-4 sm:inset-6 rounded-[40px] sm:rounded-[55px] border-[2px] border-yellow-200/90 shadow-[inset_0_0_20px_rgba(253,224,71,0.5),0_0_20px_rgba(250,204,21,0.4)] pointer-events-none z-0" />
+        {/* Warm glow ring */}
+        <div className="pointer-events-none absolute inset-2 z-0 rounded-[22px] border border-yellow-200/70 shadow-[inset_0_0_18px_rgba(253,224,71,0.4),0_0_16px_rgba(250,204,21,0.28)] sm:inset-4 sm:rounded-[40px] lg:inset-5 lg:rounded-[52px]" />
 
-                  {/* Wood cavity background */}
-                  <div className="absolute inset-5 sm:inset-7 bg-gradient-to-r from-[#e3dbcc] via-[#ede6d8] to-[#e3dbcc] rounded-[38px] sm:rounded-[50px] shadow-[inset_0_5px_20px_rgba(0,0,0,0.15)] -z-10" />
+        {/* Wood cavity background */}
+        <div className="pointer-events-none absolute inset-3 rounded-[20px] bg-gradient-to-r from-[#e3dbcc] via-[#ede6d8] to-[#e3dbcc] shadow-[inset_0_5px_18px_rgba(0,0,0,0.14)] sm:inset-5 sm:rounded-[36px] lg:inset-6 lg:rounded-[48px]" />
 
-                  {/* Content */}
-                  <div className="relative z-10 space-y-4 sm:space-y-8 py-4">
-                    {chunkedBooks.map((shelf, shelfIndex) => (
-                      <div key={shelfIndex} className="relative pb-8 pt-4 border-b border-[#bfae9b]/60 last:border-b-0 last:pb-2">
+        {/* Rows */}
+        <div className="relative z-10 space-y-3 py-2 sm:space-y-6 sm:py-4">
+          {chunkedBooks.map((shelf, shelfIndex) => (
+            <div key={shelfIndex} className="relative pb-6 pt-3 sm:pb-9 sm:pt-5">
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 sm:gap-16 items-center px-6 sm:px-16 lg:px-24 max-w-5xl mx-auto [perspective:1400px]">
-                          {shelf.map((item, i) => {
-                            // Render the "Add New Volume" card
-                            if (item.isCreatePlaceholder) {
-                              return (
-                                <div key="add-new" className="flex justify-center group cursor-pointer">
+              {/* ONE flex row = ONE shelf level.
+                  Books are centered, never wrap, so whatever count this
+                  row has (2, 3…), the board below always belongs to it. */}
+              <div className="flex items-end justify-center gap-x-3 px-2 pb-3 [perspective:1400px] sm:gap-x-6 sm:px-8">
+                {shelf.map((item, i) => {
+                  /* ---------- "Add New Volume" card ---------- */
+                  if (item.isCreatePlaceholder) {
+                    return (
+                      <div key="add-new" className="flex-1 flex justify-center">
+                        <div className="w-[clamp(108px,22vw,200px)]">
+                          <motion.div
+                            initial={{ opacity: 0, y: 28, rotate: -1.2 }}
+                            animate={{ opacity: 1, y: 0, rotate: -1.2 }}
+                            transition={{ delay: shelfIndex * 0.06, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                            onClick={() => setShowCreate(true)}
+                            className="[transform-style:preserve-3d]"
+                          >
+                            <div className="group relative aspect-[3/4.2] w-full cursor-pointer [transform-style:preserve-3d] transition-transform duration-500 ease-out hover:[transform:rotateY(-18deg)_rotateX(2deg)_translateY(-12px)_scale(1.02)]">
+                              <div className="absolute -bottom-3 left-1/2 z-0 h-3 w-4/5 -translate-x-1/2 rounded-[50%] bg-black/25 blur-[5px] transition-all duration-500 group-hover:w-3/5 group-hover:bg-black/20" />
+                              <div className="absolute -right-1.5 bottom-1 top-1 z-0 w-2 rounded-r-sm bg-[repeating-linear-gradient(to_bottom,#f8f4e9_0px,#f8f4e9_2px,#ddd5c3_3px)] shadow-[inset_-2px_0_3px_rgba(0,0,0,0.12)]" />
+
+                              <div className="absolute inset-0 z-10 overflow-hidden rounded-r-xl rounded-l-[3px] border-2 border-dashed border-amber-400/60 bg-gradient-to-br from-amber-50/95 via-amber-100/85 to-amber-50/95 shadow-[8px_12px_24px_rgba(0,0,0,0.26)] transition-shadow duration-500 group-hover:shadow-[16px_22px_40px_rgba(0,0,0,0.34)]">
+                                <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-20 w-5 bg-gradient-to-r from-amber-200/40 via-amber-100/20 to-transparent" />
+
+                                <div className="flex h-full w-full flex-col items-center justify-center p-3 text-center sm:p-6">
                                   <motion.div
-                                    initial={{ opacity: 0, y: 28, rotate: -1.2 }}
-                                    animate={{ opacity: 1, y: 0, rotate: -1.2 }}
-                                    transition={{ delay: shelfIndex * 0.06, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-                                    whileHover={{
-                                      y: -20,
-                                      rotateY: -12,
-                                      rotate: 0,
-                                      z: 20,
-                                      transition: { duration: 0.35, ease: 'easeOut' }
-                                    }}
-                                    className="relative w-[210px] h-[280px] transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(-22deg)_translateY(-10px)_rotateX(2deg)] group-hover:scale-105"
-                                    onClick={() => setShowCreate(true)}
-                                    whileTap={{ scale: 0.97 }}
-                                    style={{ transformStyle: 'preserve-3d' }}
+                                    className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-500 shadow-lg shadow-amber-200/50 sm:mb-4 sm:h-16 sm:w-16"
+                                    animate={{ scale: [1, 1.05, 1] }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                                   >
-                                    <div className="absolute inset-0 w-full h-full rounded-r-2xl rounded-l-md shadow-[15px_20px_35px_rgba(0,0,0,0.35)] overflow-hidden border-2 border-dashed border-amber-400/60 bg-gradient-to-br from-amber-50/90 via-amber-100/80 to-amber-50/90">
-                                      {/* Book spine effect on the left */}
-                                      <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-amber-200/40 via-amber-100/20 to-transparent pointer-events-none z-20" />
-
-                                      {/* Content */}
-                                      <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
-                                        <motion.div
-                                          className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center mb-4 shadow-lg shadow-amber-200/50"
-                                          animate={{
-                                            scale: [1, 1.05, 1],
-                                            boxShadow: [
-                                              '0 10px 25px -5px rgba(251, 191, 36, 0.4)',
-                                              '0 15px 30px -5px rgba(251, 191, 36, 0.6)',
-                                              '0 10px 25px -5px rgba(251, 191, 36, 0.4)',
-                                            ]
-                                          }}
-                                          transition={{
-                                            duration: 2,
-                                            repeat: Infinity,
-                                            ease: "easeInOut"
-                                          }}
-                                        >
-                                          <Plus className="w-8 h-8 text-white stroke-[2.5]" />
-                                        </motion.div>
-                                        <h4 className="font-display font-semibold text-amber-900 text-sm mb-1">
-                                          New Volume
-                                        </h4>
-                                        <p className="text-amber-700/70 text-xs leading-relaxed">
-                                          Start a fresh scrapbook
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    {/* Book page edges on the right */}
-                                    <div className="absolute right-0 top-[4px] w-[16px] h-[calc(100%-8px)] bg-gradient-to-r from-amber-200 via-amber-100 to-amber-300 [transform:rotateY(90deg)_translateZ(202px)] origin-right shadow-[inset_0_0_8px_rgba(0,0,0,0.1)] rounded-r-sm" />
+                                    <Plus className="h-5 w-5 text-white stroke-[2.5] sm:h-8 sm:w-8" />
                                   </motion.div>
-                                </div>
-                              )
-                            }
-
-                            // Render regular book cards
-                            const book = item
-                            return (
-                              <div key={book.id} className="flex justify-center group cursor-pointer">
-                                <div className="relative w-[210px] h-[280px] transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(-22deg)_translateY(-10px)_rotateX(2deg)] group-hover:scale-105">
-
-                                  <div className="absolute inset-0 w-full h-full rounded-r-2xl rounded-l-md shadow-[15px_20px_35px_rgba(0,0,0,0.35)] overflow-hidden border-t border-r border-b border-beige/40 bg-white">
-                                    <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/30 via-black/10 to-transparent pointer-events-none z-20" />
-                                    <div className="w-full h-full">
-                                      <BookCard book={book} index={i} shelf />
-                                    </div>
-                                  </div>
-
-                                  <div className="absolute right-0 top-[4px] w-[16px] h-[calc(100%-8px)] bg-gradient-to-r from-zinc-200 via-zinc-100 to-zinc-300 [transform:rotateY(90deg)_translateZ(202px)] origin-right shadow-[inset_0_0_8px_rgba(0,0,0,0.15)] rounded-r-sm" />
+                                  <h4 className="font-display text-xs font-semibold text-amber-900 sm:text-sm">New Volume</h4>
+                                  <p className="mt-1 text-[10px] leading-relaxed text-amber-700/70 sm:text-xs">Start a fresh scrapbook</p>
                                 </div>
                               </div>
-                            )
-                          })}
+                            </div>
+                          </motion.div>
                         </div>
-
-                        <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-b from-[#b0a390] via-[#8c806e] to-[#6d6252] shadow-[0_6px_12px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)] rounded-full mx-2 sm:mx-6" />
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    )
+                  }
+
+                  /* ---------- regular book ---------- */
+                  const book = item
+                  return (
+                    <div key={book.id} className="flex-1 flex justify-center">
+                      {/* fluid width — shrinks on phones (3 books still fit),
+                          grows to 200px on desktop */}
+                      <div className="w-[clamp(108px,22vw,200px)]">
+                        <BookCard book={book} index={i} shelf />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Shelf board — exactly ONE per row, drawn right under that
+                  row's books. No extra border lines, so you never see a line
+                  without books above it. */}
+              <div className="absolute bottom-0 left-1 right-1 h-3 rounded-full bg-gradient-to-b from-[#b0a390] via-[#8c806e] to-[#6d6252] shadow-[0_6px_12px_rgba(0,0,0,0.28),inset_0_1px_1px_rgba(255,255,255,0.4)] sm:left-4 sm:right-4 sm:h-4" />
+              <div className="absolute -bottom-1 left-6 right-6 h-1.5 rounded-full bg-black/15 blur-[2px] sm:left-10 sm:right-10" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
         </motion.div>
       </main>
 

@@ -70,6 +70,8 @@ export default function ImageEditorModal({
   initialFiles = [],
   onSaveComplete,
   aspectRatio = 1,
+  secondaryActionLabel = null,
+  onSecondaryAction = null,
 }) {
   const [images, setImages] = useState([])
   const [activeIndex, setActiveIndex] = useState(0)
@@ -189,8 +191,28 @@ export default function ImageEditorModal({
       setActiveTool(null)
       setShowPreview(false)
       setIsProcessing(false)
+
+      const topBarTargets = document.querySelectorAll('header.fixed, div.absolute.top-0.left-0.right-0')
+      topBarTargets.forEach((node) => {
+        node.dataset.editorHidden = 'true'
+        node.style.visibility = 'hidden'
+        node.style.pointerEvents = 'none'
+      })
     } else {
       document.body.style.overflow = ''
+      document.querySelectorAll('[data-editor-hidden="true"]').forEach((node) => {
+        node.style.visibility = ''
+        node.style.pointerEvents = ''
+        delete node.dataset.editorHidden
+      })
+    }
+
+    return () => {
+      document.querySelectorAll('[data-editor-hidden="true"]').forEach((node) => {
+        node.style.visibility = ''
+        node.style.pointerEvents = ''
+        delete node.dataset.editorHidden
+      })
     }
   }, [isOpen])
 
@@ -558,7 +580,7 @@ export default function ImageEditorModal({
   calculateFrameDimensions()
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -585,13 +607,26 @@ export default function ImageEditorModal({
           <h2 className="absolute left-1/2 -translate-x-1/2 font-display text-base font-semibold text-ink sm:text-lg">
             Crop
           </h2>
-          <button
-            onClick={handleNext}
-            disabled={!images.length || isProcessing}
-            className="text-sm font-semibold text-pink-accent transition-opacity hover:opacity-70 disabled:opacity-40 sm:text-base"
-          >
-            Next
-          </button>
+
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            {secondaryActionLabel && (
+              <button
+                type="button"
+                onClick={onSecondaryAction || onClose}
+                className="rounded-full border border-beige bg-paper px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink transition-colors hover:border-pink-accent/40 hover:text-pink-accent sm:text-xs"
+              >
+                {secondaryActionLabel}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={!images.length || isProcessing}
+              className="text-sm font-semibold text-pink-accent transition-opacity hover:opacity-70 disabled:opacity-40 sm:text-base"
+            >
+              Next
+            </button>
+          </div>
         </header>
 
         <AnimatePresence>
