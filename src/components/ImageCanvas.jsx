@@ -134,6 +134,9 @@ export default function ImageCanvas({
   emptyLabel = 'Drop your photo here',
   emptyHint = 'or click to browse',
   variant = 'polaroid',
+  onEditorOpenChange,
+  editorSecondaryActionLabel,
+  editorSecondaryAction,
 }) {
   const inputRef = useRef(null)
   const [dragOver, setDragOver] = useState(false)
@@ -149,6 +152,16 @@ export default function ImageCanvas({
   else if (aspect === '3/4') cropAspectRatio = 3 / 4
   else if (aspect === '3/1') cropAspectRatio = 3 / 1
   else if (aspect === '4/3') cropAspectRatio = 4 / 3
+
+  const openEditor = () => {
+    setEditorOpen(true)
+    onEditorOpenChange?.(true)
+  }
+
+  const closeEditor = () => {
+    setEditorOpen(false)
+    onEditorOpenChange?.(false)
+  }
 
   const validateAndAddFiles = (files) => {
     setValidationError('')
@@ -176,7 +189,7 @@ export default function ImageCanvas({
     if (acceptedFiles.length === 0) return
     setEditingFiles(acceptedFiles)
     setEditIndex(null)
-    setEditorOpen(true)
+    openEditor()
   }
 
   const handleDrop = (e) => {
@@ -211,7 +224,7 @@ export default function ImageCanvas({
     e.stopPropagation()
     setEditingFiles([images[index]])
     setEditIndex(index)
-    setEditorOpen(true)
+    openEditor()
   }
 
   const handleSaveComplete = (processedUrls) => {
@@ -228,7 +241,7 @@ export default function ImageCanvas({
     setCameraOpen(false)
     setEditingFiles([dataUrl])
     setEditIndex(null)
-    setEditorOpen(true)
+    openEditor()
   }
 
   const openFileInput = (e) => {
@@ -336,10 +349,12 @@ export default function ImageCanvas({
         />
         <ImageEditorModal
           isOpen={editorOpen}
-          onClose={() => setEditorOpen(false)}
+          onClose={closeEditor}
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
           aspectRatio={cropAspectRatio}
+          secondaryActionLabel="Preserve Memory"
+          onSecondaryAction={closeEditor}
         />
         <CameraCaptureModal
           isOpen={cameraOpen}
@@ -421,10 +436,12 @@ export default function ImageCanvas({
         />
         <ImageEditorModal
           isOpen={editorOpen}
-          onClose={() => setEditorOpen(false)}
+          onClose={closeEditor}
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
           aspectRatio={cropAspectRatio}
+          secondaryActionLabel="Preserve Memory"
+          onSecondaryAction={closeEditor}
         />
         <CameraCaptureModal
           isOpen={cameraOpen}
@@ -490,10 +507,12 @@ export default function ImageCanvas({
         </motion.div>
         <ImageEditorModal
           isOpen={editorOpen}
-          onClose={() => setEditorOpen(false)}
+          onClose={closeEditor}
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
           aspectRatio={cropAspectRatio}
+          secondaryActionLabel="Preserve Memory"
+          onSecondaryAction={closeEditor}
         />
         <CameraCaptureModal
           isOpen={cameraOpen}
@@ -567,10 +586,12 @@ export default function ImageCanvas({
         </div>
         <ImageEditorModal
           isOpen={editorOpen}
-          onClose={() => setEditorOpen(false)}
+          onClose={closeEditor}
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
           aspectRatio={cropAspectRatio}
+          secondaryActionLabel="Preserve Memory"
+          onSecondaryAction={closeEditor}
         />
         <CameraCaptureModal
           isOpen={cameraOpen}
@@ -693,10 +714,12 @@ export default function ImageCanvas({
 
       <ImageEditorModal
         isOpen={editorOpen}
-        onClose={() => setEditorOpen(false)}
+        onClose={closeEditor}
         initialFiles={editingFiles}
         onSaveComplete={handleSaveComplete}
         aspectRatio={cropAspectRatio}
+        secondaryActionLabel={editorSecondaryActionLabel || 'Preserve Memory'}
+        onSecondaryAction={editorSecondaryAction || closeEditor}
         multiple
       />
       <CameraCaptureModal

@@ -56,6 +56,8 @@ export default function EditMemoryModal({ isOpen, onClose, onSave, memory }) {
     onClose()
   }
 
+  const [editorOpen, setEditorOpen] = useState(false)
+
   return (
     <VisualEditorShell
       isOpen={isOpen}
@@ -63,6 +65,7 @@ export default function EditMemoryModal({ isOpen, onClose, onSave, memory }) {
       title="Edit This Moment"
       onSave={handleSave}
       saveLabel="Update Memory"
+      showHeader={!editorOpen}
     >
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -78,6 +81,9 @@ export default function EditMemoryModal({ isOpen, onClose, onSave, memory }) {
             multiple
             emptyLabel="Drop your polaroid here"
             emptyHint="A photo that holds the feeling of this moment"
+            onEditorOpenChange={setEditorOpen}
+            editorSecondaryActionLabel="Update Memory"
+            editorSecondaryAction={handleSave}
           />
         </div>
 
