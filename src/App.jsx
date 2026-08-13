@@ -1,3 +1,4 @@
+import { useLayoutEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { AppProvider } from './context/AppContext'
@@ -17,94 +18,110 @@ import FollowersModal from './components/FollowersModal'
 import UserProfileModal from './components/UserProfileModal'
 import { useApp } from './context/AppContext'
 
-function AnimatedRoutes() {
+function AppShell() {
   const location = useLocation()
   const {
+    user,
     activeFollowersModal,
     closeFollowersModal,
     activeUserProfileId,
     closeUserProfile,
   } = useApp()
 
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0)
+  }, [location.pathname])
+
+  const shouldReserveMobileNavSpace = Boolean(user)
+
   return (
-    <>
-      <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
-          <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
-          <Route path="/signup" element={<PageTransition><Signup /></PageTransition>} />
-          <Route
-            path="/welcome"
-            element={
-              <ProtectedRoute>
-                <PageTransition>
-                  <Welcome />
-                </PageTransition>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/capture"
-            element={
-              <ProtectedRoute>
-                <PageTransition>
-                  <Capture />
-                </PageTransition>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <PageTransition>
-                  <Dashboard />
-                </PageTransition>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/community"
-            element={
-              <ProtectedRoute>
-                <PageTransition>
-                  <Community />
-                </PageTransition>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/edit-profile"
-            element={
-              <ProtectedRoute>
-                <PageTransition>
-                  <EditProfile />
-                </PageTransition>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/books/:bookId"
-            element={
-              <ProtectedRoute>
-                <PageTransition>
-                  <BookDetail />
-                </PageTransition>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/books/:bookId/timeline"
-            element={
-              <ProtectedRoute>
-                <PageTransition>
-                  <MemoryTimeline />
-                </PageTransition>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </AnimatePresence>
+    <div className="app-shell min-h-dvh overflow-x-hidden">
+      <div
+        className="app-shell-main"
+        style={
+          shouldReserveMobileNavSpace
+            ? { paddingBottom: 'calc(5.75rem + env(safe-area-inset-bottom))' }
+            : undefined
+        }
+      >
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
+            <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+            <Route path="/signup" element={<PageTransition><Signup /></PageTransition>} />
+            <Route
+              path="/welcome"
+              element={
+                <ProtectedRoute>
+                  <PageTransition>
+                    <Welcome />
+                  </PageTransition>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/capture"
+              element={
+                <ProtectedRoute>
+                  <PageTransition>
+                    <Capture />
+                  </PageTransition>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <PageTransition>
+                    <Dashboard />
+                  </PageTransition>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/community"
+              element={
+                <ProtectedRoute>
+                  <PageTransition>
+                    <Community />
+                  </PageTransition>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/edit-profile"
+              element={
+                <ProtectedRoute>
+                  <PageTransition>
+                    <EditProfile />
+                  </PageTransition>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/books/:bookId"
+              element={
+                <ProtectedRoute>
+                  <PageTransition>
+                    <BookDetail />
+                  </PageTransition>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/books/:bookId/timeline"
+              element={
+                <ProtectedRoute>
+                  <PageTransition>
+                    <MemoryTimeline />
+                  </PageTransition>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </AnimatePresence>
+      </div>
 
       <FollowersModal
         isOpen={!!activeFollowersModal}
@@ -117,7 +134,7 @@ function AnimatedRoutes() {
         onClose={closeUserProfile}
         userId={activeUserProfileId}
       />
-    </>
+    </div>
   )
 }
 
@@ -125,7 +142,7 @@ export default function App() {
   return (
     <AppProvider>
       <BrowserRouter>
-        <AnimatedRoutes />
+        <AppShell />
       </BrowserRouter>
     </AppProvider>
   )

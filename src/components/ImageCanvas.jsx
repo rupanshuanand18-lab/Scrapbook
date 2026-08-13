@@ -152,6 +152,7 @@ export default function ImageCanvas({
   else if (aspect === '3/4') cropAspectRatio = 3 / 4
   else if (aspect === '3/1') cropAspectRatio = 3 / 1
   else if (aspect === '4/3') cropAspectRatio = 4 / 3
+  const showPreserveMemory = images.length > 0
 
   const openEditor = () => {
     setEditorOpen(true)
@@ -353,8 +354,8 @@ export default function ImageCanvas({
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
           aspectRatio={cropAspectRatio}
-          secondaryActionLabel="Preserve Memory"
-          onSecondaryAction={closeEditor}
+          secondaryActionLabel={showPreserveMemory ? 'Preserve Memory' : null}
+          onSecondaryAction={showPreserveMemory ? closeEditor : null}
         />
         <CameraCaptureModal
           isOpen={cameraOpen}
@@ -440,8 +441,8 @@ export default function ImageCanvas({
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
           aspectRatio={cropAspectRatio}
-          secondaryActionLabel="Preserve Memory"
-          onSecondaryAction={closeEditor}
+          secondaryActionLabel={showPreserveMemory ? 'Preserve Memory' : null}
+          onSecondaryAction={showPreserveMemory ? closeEditor : null}
         />
         <CameraCaptureModal
           isOpen={cameraOpen}
@@ -511,8 +512,8 @@ export default function ImageCanvas({
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
           aspectRatio={cropAspectRatio}
-          secondaryActionLabel="Preserve Memory"
-          onSecondaryAction={closeEditor}
+          secondaryActionLabel={showPreserveMemory ? 'Preserve Memory' : null}
+          onSecondaryAction={showPreserveMemory ? closeEditor : null}
         />
         <CameraCaptureModal
           isOpen={cameraOpen}
@@ -590,8 +591,8 @@ export default function ImageCanvas({
           initialFiles={editingFiles}
           onSaveComplete={handleSaveComplete}
           aspectRatio={cropAspectRatio}
-          secondaryActionLabel="Preserve Memory"
-          onSecondaryAction={closeEditor}
+          secondaryActionLabel={showPreserveMemory ? 'Preserve Memory' : null}
+          onSecondaryAction={showPreserveMemory ? closeEditor : null}
         />
         <CameraCaptureModal
           isOpen={cameraOpen}
@@ -718,8 +719,8 @@ export default function ImageCanvas({
         initialFiles={editingFiles}
         onSaveComplete={handleSaveComplete}
         aspectRatio={cropAspectRatio}
-        secondaryActionLabel={editorSecondaryActionLabel || 'Preserve Memory'}
-        onSecondaryAction={editorSecondaryAction || closeEditor}
+        secondaryActionLabel={showPreserveMemory ? (editorSecondaryActionLabel || 'Preserve Memory') : null}
+        onSecondaryAction={showPreserveMemory ? (editorSecondaryAction || closeEditor) : null}
         multiple
       />
       <CameraCaptureModal

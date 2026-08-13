@@ -580,7 +580,7 @@ export default function ImageEditorModal({
   calculateFrameDimensions()
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center">
+    <div className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto overscroll-contain sm:items-center">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -594,9 +594,9 @@ export default function ImageEditorModal({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.98 }}
         transition={{ duration: 0.2 }}
-        className="relative flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden bg-paper shadow-2xl sm:h-[95dvh] sm:rounded-[24px]"
+        className="relative flex min-h-[100dvh] w-full max-w-6xl flex-col overflow-hidden bg-paper shadow-2xl sm:min-h-[95dvh] sm:rounded-[24px]"
       >
-        <header className="flex shrink-0 items-center justify-between border-b border-beige/40 bg-paper px-4 py-3 sm:px-6">
+        <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-beige/40 bg-paper px-4 py-3 sm:flex-nowrap sm:gap-4 sm:px-6">
           <button
             onClick={onClose}
             className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-beige/30 hover:text-ink"
@@ -604,16 +604,16 @@ export default function ImageEditorModal({
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <h2 className="absolute left-1/2 -translate-x-1/2 font-display text-base font-semibold text-ink sm:text-lg">
+          <h2 className="order-3 w-full text-center font-display text-base font-semibold text-ink sm:order-2 sm:w-auto sm:flex-1 sm:text-lg">
             Crop
           </h2>
 
-          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+          <div className="order-2 ml-auto flex w-full flex-wrap justify-end gap-2 sm:order-3 sm:w-auto sm:gap-3">
             {secondaryActionLabel && (
               <button
                 type="button"
                 onClick={onSecondaryAction || onClose}
-                className="rounded-full border border-beige bg-paper px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink transition-colors hover:border-pink-accent/40 hover:text-pink-accent sm:text-xs"
+                className="min-h-9 w-full rounded-full border border-beige bg-paper px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink transition-colors hover:border-pink-accent/40 hover:text-pink-accent sm:w-auto sm:text-xs"
               >
                 {secondaryActionLabel}
               </button>
@@ -622,7 +622,7 @@ export default function ImageEditorModal({
               type="button"
               onClick={handleNext}
               disabled={!images.length || isProcessing}
-              className="text-sm font-semibold text-pink-accent transition-opacity hover:opacity-70 disabled:opacity-40 sm:text-base"
+              className="min-h-9 w-full rounded-full border border-pink-accent/20 bg-pink-accent/10 px-4 text-sm font-semibold text-pink-accent transition-opacity hover:opacity-70 disabled:opacity-40 sm:w-auto sm:border-0 sm:bg-transparent sm:px-0 sm:text-base"
             >
               Next
             </button>
@@ -645,7 +645,7 @@ export default function ImageEditorModal({
 
         <div
           ref={viewportRef}
-          className="relative flex flex-1 items-center justify-center overflow-hidden"
+          className="relative flex min-h-[42dvh] flex-1 items-center justify-center overflow-hidden"
           style={{ backgroundColor: BACKGROUND_COLOR }}
           onWheel={handleWheel}
         >
@@ -732,10 +732,10 @@ export default function ImageEditorModal({
 
         {activeImage && (
           <div className="shrink-0 border-t border-beige/40 bg-paper">
-            <div className="flex items-center justify-center gap-2 px-4 py-3 sm:gap-4">
+            <div className="flex flex-wrap items-center justify-center gap-2 px-3 py-3 sm:gap-4 sm:px-4">
               <button
                 onClick={() => setActiveTool((t) => (t === 'zoom' ? null : 'zoom'))}
-                className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition-colors ${activeTool === 'zoom' ? 'bg-pink-accent/10 text-pink-accent' : 'text-ink-muted hover:bg-beige/30 hover:text-ink'
+                className={`flex min-w-20 flex-1 flex-col items-center gap-1 rounded-xl px-3 py-2 transition-colors sm:min-w-0 sm:flex-none sm:px-4 ${activeTool === 'zoom' ? 'bg-pink-accent/10 text-pink-accent' : 'text-ink-muted hover:bg-beige/30 hover:text-ink'
                   }`}
               >
                 <ZoomIn className="h-5 w-5" />
@@ -744,7 +744,7 @@ export default function ImageEditorModal({
 
               <button
                 onClick={() => setShowGrid((v) => !v)}
-                className={`flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition-colors ${showGrid ? 'bg-pink-accent/10 text-pink-accent' : 'text-ink-muted hover:bg-beige/30 hover:text-ink'
+                className={`flex min-w-20 flex-1 flex-col items-center gap-1 rounded-xl px-3 py-2 transition-colors sm:min-w-0 sm:flex-none sm:px-4 ${showGrid ? 'bg-pink-accent/10 text-pink-accent' : 'text-ink-muted hover:bg-beige/30 hover:text-ink'
                   }`}
               >
                 <Grid3x3 className="h-5 w-5" />
@@ -753,7 +753,7 @@ export default function ImageEditorModal({
 
               <button
                 onClick={handleRotateCurrent}
-                className="flex flex-col items-center gap-1 rounded-xl px-4 py-2 text-ink-muted transition-colors hover:bg-beige/30 hover:text-ink"
+                className="flex min-w-20 flex-1 flex-col items-center gap-1 rounded-xl px-3 py-2 text-ink-muted transition-colors hover:bg-beige/30 hover:text-ink sm:min-w-0 sm:flex-none sm:px-4"
               >
                 <RotateCw className="h-5 w-5" />
                 <span className="text-[10px] font-semibold uppercase tracking-wider">Rotate</span>
@@ -761,7 +761,7 @@ export default function ImageEditorModal({
 
               <button
                 onClick={handleReset}
-                className="flex flex-col items-center gap-1 rounded-xl px-4 py-2 text-ink-muted transition-colors hover:bg-beige/30 hover:text-ink"
+                className="flex min-w-20 flex-1 flex-col items-center gap-1 rounded-xl px-3 py-2 text-ink-muted transition-colors hover:bg-beige/30 hover:text-ink sm:min-w-0 sm:flex-none sm:px-4"
               >
                 <RefreshCw className="h-5 w-5" />
                 <span className="text-[10px] font-semibold uppercase tracking-wider">Reset</span>
