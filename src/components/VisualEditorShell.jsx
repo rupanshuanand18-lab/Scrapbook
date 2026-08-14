@@ -6,7 +6,6 @@ import Button from './ui/Button'
 export default function VisualEditorShell({
   isOpen,
   onClose,
-  title,
   onSave,
   saveLabel = 'Save',
   saveDisabled = false,
@@ -48,10 +47,6 @@ export default function VisualEditorShell({
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Go Back</span>
               </button>
-
-              <h2 className="font-display text-base sm:text-xl font-semibold text-ink absolute left-1/2 -translate-x-1/2 leading-tight">
-                {title}
-              </h2>
 
               <Button size="sm" onClick={onSave} disabled={saveDisabled}>
                 {saveLabel}

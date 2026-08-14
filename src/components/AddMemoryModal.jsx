@@ -28,7 +28,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, bookId, initia
 
       setImages(nextImages);
     }
-  }, [isOpen, initialImages]);
+  }, [isOpen]);
 
   const reset = () => {
     setTitle('')
@@ -63,7 +63,6 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, bookId, initia
     <VisualEditorShell
       isOpen={isOpen}
       onClose={handleClose}
-      title="Capture a Moment"
       onSave={handleSave}
       saveLabel="Preserve Memory"
       showHeader={!editorOpen}
