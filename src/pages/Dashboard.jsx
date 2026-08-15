@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo} from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Flame, FolderOpen, Plus } from 'lucide-react'
 import Navbar from '../components/Navbar'
@@ -32,42 +32,33 @@ export default function Dashboard() {
     return matchesSearch && matchesFilter
   })
 
-  // Add a placeholder "create" item to the beginning of the filtered array
-  const displayItems = [{ id: 'add-new', isCreatePlaceholder: true }, ...filtered]
+  useEffect(() => {
+    const updateShelfColumns = () => setShelfColumns(window.innerWidth >= 768 ? 3 : 2)
+    updateShelfColumns()
+    window.addEventListener('resize', updateShelfColumns)
+    return () => window.removeEventListener('resize', updateShelfColumns)
+  }, [])
 
-  
-useEffect(() => {
-  const updateShelfColumns = () => setShelfColumns(window.innerWidth >= 768 ? 3 : 2)
-  updateShelfColumns()
-  window.addEventListener('resize', updateShelfColumns)
-  return () => window.removeEventListener('resize', updateShelfColumns)
-}, [])
+  // Group items into shelves of max 3, with the create card always leading.
+  const chunkedBooks = useMemo(() => {
+    const items = [{ id: 'add-new', isCreatePlaceholder: true }, ...filtered]
+    const total = items.length
+    if (total === 0) return []
 
-// Group items into shelves of max 3 (including the add card)
-const chunkedBooks = useMemo(() => {
-  const items = [...filtered]
-  if (!search) items.push({ isCreatePlaceholder: true }) // same create-card behaviour as before
+    let rowCount = Math.ceil(total / shelfColumns)
+    while (rowCount > 1 && Math.floor(total / rowCount) < 2) rowCount -= 1
 
-  const total = items.length
-  if (total === 0) return []
-
-  // rows needed for this column count…
-  let rowCount = Math.ceil(total / shelfColumns)
-  // …then reduce rows so no row ends up with one lonely book
-  while (rowCount > 1 && Math.floor(total / rowCount) < 2) rowCount -= 1
-
-  // distribute evenly → rows differ by at most one book
-  const base = Math.floor(total / rowCount)
-  const extra = total % rowCount
-  const rows = []
-  let cursor = 0
-  for (let r = 0; r < rowCount; r += 1) {
-    const size = base + (r < extra ? 1 : 0)
-    rows.push(items.slice(cursor, cursor + size))
-    cursor += size
-  }
-  return rows
-}, [filtered, search, shelfColumns])
+    const base = Math.floor(total / rowCount)
+    const extra = total % rowCount
+    const rows = []
+    let cursor = 0
+    for (let r = 0; r < rowCount; r += 1) {
+      const size = base + (r < extra ? 1 : 0)
+      rows.push(items.slice(cursor, cursor + size))
+      cursor += size
+    }
+    return rows
+  }, [filtered, shelfColumns])
 
 
   const personalCount = books.filter((b) => !b.isShared).length

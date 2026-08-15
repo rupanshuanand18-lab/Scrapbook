@@ -72,6 +72,20 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+.app-shell {
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+.app-shell-main {
+  min-height: 100dvh;
 }
 
 /* ─── Paper & Texture Surfaces ─── */

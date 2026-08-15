@@ -6,7 +6,6 @@ import Button from './ui/Button'
 export default function VisualEditorShell({
   isOpen,
   onClose,
-  title,
   onSave,
   saveLabel = 'Save',
   saveDisabled = false,
@@ -49,22 +48,18 @@ export default function VisualEditorShell({
                 <span className="hidden sm:inline">Go Back</span>
               </button>
 
-              <h2 className="font-display text-base sm:text-xl font-semibold text-ink absolute left-1/2 -translate-x-1/2 leading-tight">
-                {title}
-              </h2>
-
               <Button size="sm" onClick={onSave} disabled={saveDisabled}>
                 {saveLabel}
               </Button>
             </header>
           )}
 
-          <div className="relative z-10 flex-1 min-h-0 overflow-y-auto py-8 sm:py-12 px-5">
+          <div className="relative z-10 flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-8 sm:py-12 px-5">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="max-w-4xl mx-auto grid md:grid-cols-12 items-stretch scrapbook-card rounded-[32px] overflow-hidden min-h-[520px] sunlight-glow"
+              className="max-w-4xl mx-auto grid md:grid-cols-12 items-stretch scrapbook-card rounded-[32px] overflow-hidden min-h-[520px] min-w-0 sunlight-glow"
             >
               <div className="hidden md:flex md:col-span-1 border-r border-beige/40 bg-parchment/60 flex-col items-center justify-around py-10 relative">
                 {Array.from({ length: 7 }).map((_, i) => (

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Check,
-  ChevronLeft,
   Globe2,
   Loader2,
   Lock,
@@ -16,8 +15,6 @@ import { useApp } from '../context/AppContext'
 
 const defaultAvatar =
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop&crop=face'
-const defaultCover =
-  'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1400&q=80'
 
 function Spinner() {
   return <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -36,7 +33,6 @@ export default function EditProfile() {
         'Memory keeper and story collector. Preserving life beautiful moments, one page at a time.',
       privacy: user?.privacy || 'public',
       avatar: user?.avatar || defaultAvatar,
-      cover: user?.cover || defaultCover,
     }),
     [user],
   )
@@ -45,9 +41,7 @@ export default function EditProfile() {
   const [bio, setBio] = useState(initialProfile.bio)
   const [privacy, setPrivacy] = useState(initialProfile.privacy)
   const [avatarFile, setAvatarFile] = useState(null)
-  const [coverFile, setCoverFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(initialProfile.avatar)
-  const [coverPreview, setCoverPreview] = useState(initialProfile.cover)
   const [isSaving, setIsSaving] = useState(false)
   const [toast, setToast] = useState(null)
   const [showUnsavedModal, setShowUnsavedModal] = useState(false)
@@ -57,10 +51,9 @@ export default function EditProfile() {
       displayName !== initialProfile.displayName ||
       bio !== initialProfile.bio ||
       privacy !== initialProfile.privacy ||
-      Boolean(avatarFile) ||
-      Boolean(coverFile)
+      Boolean(avatarFile)
     )
-  }, [avatarFile, bio, coverFile, displayName, initialProfile, privacy])
+  }, [avatarFile, bio, displayName, initialProfile, privacy])
 
   useEffect(() => {
     if (!isDirty) return undefined
@@ -83,9 +76,8 @@ export default function EditProfile() {
   useEffect(() => {
     return () => {
       if (avatarPreview?.startsWith('blob:')) URL.revokeObjectURL(avatarPreview)
-      if (coverPreview?.startsWith('blob:')) URL.revokeObjectURL(coverPreview)
     }
-  }, [avatarPreview, coverPreview])
+  }, [avatarPreview])
 
   const bioRemaining = 250 - bio.length
   const isBioWarning = bioRemaining <= 30
@@ -120,11 +112,9 @@ export default function EditProfile() {
       bio,
       privacy,
       avatar: avatarPreview,
-      cover: coverPreview,
     })
 
     setAvatarFile(null)
-    setCoverFile(null)
     setIsSaving(false)
     setToast('Profile updated beautifully.')
   }
@@ -141,7 +131,6 @@ export default function EditProfile() {
           className="mb-8 flex items-start justify-between gap-5"
         >
           <div>
-            <p className="font-handwritten text-xl text-pink-accent">Your public scrapbook cover</p>
             <h1 className="mt-2 font-display text-5xl sm:text-6xl leading-none">
               Edit Profile
             </h1>
@@ -155,44 +144,32 @@ export default function EditProfile() {
           transition={{ delay: 0.08, duration: 0.55, ease: 'easeOut' }}
           className="scrapbook-card rounded-3xl overflow-hidden border border-beige/50"
         >
-          <section className="relative">
-            <ImageCanvas
-              images={coverPreview ? [coverPreview] : []}
-              onImagesChange={(imgs) => {
-                if (imgs.length > 0) {
-                  setCoverFile(imgs[0])
-                  setCoverPreview(imgs[0])
-                } else {
-                  setCoverFile(null)
-                  setCoverPreview(defaultCover)
-                }
-              }}
-              multiple={false}
-              variant="cover"
-              aspect="3/1"
-            />
+          <div className="grid gap-8 px-6 pb-7 pt-7 sm:px-10 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
+            <div className="space-y-6 min-w-0">
+              <div className="flex flex-col items-center gap-4 rounded-2xl border border-beige bg-paper-warm p-5 sm:flex-row sm:items-center">
+                <ImageCanvas
+                  images={avatarPreview ? [avatarPreview] : []}
+                  onImagesChange={(imgs) => {
+                    if (imgs.length > 0) {
+                      setAvatarFile(imgs[0])
+                      setAvatarPreview(imgs[0])
+                    } else {
+                      setAvatarFile(null)
+                      setAvatarPreview(defaultAvatar)
+                    }
+                  }}
+                  multiple={false}
+                  variant="avatar"
+                  aspect="1/1"
+                />
+                <div className="text-center sm:text-left">
+                  <p className="font-handwritten text-lg text-pink-accent">Profile photo</p>
+                  <p className="mt-1 text-sm leading-relaxed text-ink-muted">
+                    Update your avatar without a banner or cover image.
+                  </p>
+                </div>
+              </div>
 
-            <div className="absolute left-6 sm:left-10 -bottom-16 z-20">
-              <ImageCanvas
-                images={avatarPreview ? [avatarPreview] : []}
-                onImagesChange={(imgs) => {
-                  if (imgs.length > 0) {
-                    setAvatarFile(imgs[0])
-                    setAvatarPreview(imgs[0])
-                  } else {
-                    setAvatarFile(null)
-                    setAvatarPreview(defaultAvatar)
-                  }
-                }}
-                multiple={false}
-                variant="avatar"
-                aspect="1/1"
-              />
-            </div>
-          </section>
-
-          <div className="grid gap-8 px-6 pb-7 pt-24 sm:px-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
-            <div className="space-y-6">
               {/* Display Username as Read-Only */}
               <div className="block">
                 <span className="text-sm font-semibold text-ink">Username</span>
@@ -234,7 +211,7 @@ export default function EditProfile() {
               </label>
             </div>
 
-            <aside className="space-y-5">
+            <aside className="space-y-5 min-w-0">
               <div className="rounded-2xl border border-beige bg-paper-warm p-5">
                 <p className="text-sm font-semibold text-ink">Privacy</p>
                 <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl border border-beige bg-paper p-1.5">
