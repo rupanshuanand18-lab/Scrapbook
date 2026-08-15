@@ -67,8 +67,8 @@ export default function CreateBookModal({ isOpen, onClose, onCreate }) {
       saveDisabled={!title.trim()}
       showHeader={!editorOpen}
     >
-      <div className="grid gap-8 items-start min-w-0 lg:grid-cols-12">
-        
+      <div className="grid gap-8 items-start min-w-0 lg:grid-cols-12 mb-24 md:mb-0 lg:mb-0">
+
         {/* Book cover preview mockup left column */}
         <motion.div
           initial={{ opacity: 0, x: -16 }}
@@ -76,7 +76,7 @@ export default function CreateBookModal({ isOpen, onClose, onCreate }) {
           className="relative flex min-w-0 flex-col items-center lg:col-span-5"
         >
           <p className="text-[9px] font-semibold text-ink-muted uppercase tracking-[0.15em] mb-3 pr-2 font-sans">Cover Preview</p>
-          
+
           <div className="relative w-full max-w-[180px] sm:max-w-[200px] lg:max-w-[200px]">
             {/* 3D hardcover binder mockup */}
             <div className="rounded-r-xl rounded-l shadow-[8px_12px_24px_rgba(50,38,31,0.22),-1px_0px_3px_rgba(50,38,31,0.05)] border-l-[10px] border-warm-brown relative overflow-hidden bg-cream aspect-[3/4.2] border border-beige/40">
@@ -90,7 +90,7 @@ export default function CreateBookModal({ isOpen, onClose, onCreate }) {
                   </span>
                 </div>
               )}
-              
+
               {/* Cover title bar */}
               <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
                 <p className="font-display font-bold text-white text-xs sm:text-sm leading-tight truncate italic">
