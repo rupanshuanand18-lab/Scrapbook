@@ -9,9 +9,9 @@ import { features, themes, previewBooks } from '../data/mockData'
 
 const floatingPhotos = [
   { src: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=140&h=140&fit=crop', x: '4%', y: '18%', delay: 0, rotate: -12, caption: 'summer daze' },
-  { src: 'https://images.unsplash.com/photo-1522673605300-519db4893ebf?w=140&h=140&fit=crop', x: '85%', y: '12%', delay: 0.5, rotate: 9, caption: 'roadtrips ✨' },
+  { src: 'https://images.unsplash.com/photo-1542242476-5a3565835a38?q=80&w=140&h=140&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', x: '85%', y: '12%', delay: 0.5, rotate: 9, caption: 'roadtrips ✨' },
   { src: 'https://images.unsplash.com/photo-1493612276216-ee3925520721?w=150&h=150&fit=crop', x: '81%', y: '62%', delay: 1, rotate: -7, caption: 'late nights' },
-  { src: 'https://images.unsplash.com/photo-1516589178581-6ec78340e8b0?w=140&h=140&fit=crop', x: '6%', y: '58%', delay: 1.5, rotate: 14, caption: 'coffee & notes' },
+  { src: 'https://images.unsplash.com/photo-1569360556894-15dca0c6ff1a?q=80&w=140&h=140&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', x: '6%', y: '58%', delay: 1.5, rotate: 14, caption: 'coffee & notes' },
 ]
 
 const liveActivityStickers = ['💕', '✨', '📸', '🌸', '⭐', '💌', '🌿']
@@ -234,7 +234,7 @@ export default function Landing() {
                 transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
                 className="absolute -top-10 -right-10 w-28 h-32 p-2 pb-7 polaroid-frame -z-10 bg-white shadow-lg overflow-hidden"
               >
-                <img src="https://images.unsplash.com/photo-1522673605300-519db4893ebf?w=120&h=120&fit=crop" alt="" className="w-full h-20 object-cover rounded-sm" />
+                <img src="https://images.unsplash.com/photo-1533158307587-828f0a76ef46?q=80&w=120&h=120&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="" className="w-full h-20 object-cover rounded-sm" />
                 <p className="font-handwritten text-[10px] text-center mt-1">memories</p>
               </motion.div>
             </motion.div>
