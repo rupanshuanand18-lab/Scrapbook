@@ -48,7 +48,7 @@ export default function DesktopSidebar({
                     <BrandIcon className="h-5 w-5" />
                   </span>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-muted">ScrapBook</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-muted">Scrapiify</p>
                     <h2 className="font-display text-2xl leading-none text-ink">Navigation</h2>
                   </div>
                 </div>

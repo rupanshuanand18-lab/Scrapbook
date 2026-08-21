@@ -5,6 +5,7 @@ import { BookOpen } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
+import logo from '../assets/logo.png'
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" className="mr-1.5">
@@ -40,8 +41,8 @@ export default function Login() {
         <div className="absolute bottom-16 right-16 w-[380px] h-[380px] bg-lavender/10 rounded-full blur-3xl pointer-events-none" />
 
         <Link to="/" className="flex items-center gap-3 z-10 self-start group">
-          <BookOpen className="w-5 h-5 text-pink-accent group-hover:scale-110 transition-transform duration-300" />
-          <span className="font-display text-2xl font-semibold tracking-tight text-ink">ScrapBook</span>
+          <img src={logo} alt="Scrapiify Logo" className="w-15 h-15" />
+          <span className="font-display text-2xl font-semibold tracking-tight text-ink">Scrapiify</span>
         </Link>
 
         <div className="relative w-full max-w-sm mx-auto h-[400px] flex items-center justify-center">
@@ -87,8 +88,8 @@ export default function Login() {
         >
           <div className="text-center lg:text-left">
             <Link to="/" className="inline-flex lg:hidden items-center gap-2.5 mb-8 group">
-              <BookOpen className="w-5 h-5 text-pink-accent" />
-              <span className="font-display text-2xl font-semibold text-ink">ScrapBook</span>
+              <img src={logo} alt="Scrapiify Logo" className="w-15 h-15" />
+              <span className="font-display text-2xl font-semibold text-ink">Scrapiify</span>
             </Link>
             <h2 className="font-display text-3xl sm:text-4xl font-semibold text-ink leading-none">Welcome back</h2>
             <p className="text-sm text-ink-muted mt-3 font-sans">Your stories are waiting. Pick up where you left off.</p>
@@ -113,7 +114,7 @@ export default function Login() {
                 required
               />
               <Button type="submit" className="w-full py-3.5">
-                Return to My Scrapbook
+                Return to My Scrapiify
               </Button>
             </form>
 

@@ -225,7 +225,7 @@ export const books = [
     description: 'Late nights, canteen chats, and graduation day tears.',
     type: 'friendship',
     themeId: 'vintage-journal',
-    coverImage: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=400&h=560&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1766289082911-40e9eecec21d?q=80&w=400&h=560&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     memoryCount: 42,
     isShared: true,
     ownerId: 'u1',
@@ -307,7 +307,7 @@ export const memories = [
     date: '2025-11-01',
     mood: 'emotional',
     description: 'Boxes everywhere, pizza on the floor, and the start of our home. I cried happy tears.',
-    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=400&fit=crop'],
+    images: ['https://plus.unsplash.com/premium_photo-1672498193366-7b9ba9fe26cb?q=80&w=600&auto=format&h=400&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D']
   },
   {
     id: 'm6',

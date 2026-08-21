@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { BookOpen, Menu } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import logo from '../assets/logo.png'
 
 function getPageTitle(pathname, search) {
   if (pathname === '/') return 'Home'
@@ -45,12 +46,16 @@ export default function TopHeader({ onMenuClick, sidebarOpen }) {
               <motion.span
                 whileHover={{ rotate: 8, scale: 1.06 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-beige/60 bg-paper-warm text-pink-accent shadow-[0_6px_16px_rgba(44,40,37,0.06)]"
+                className="flex h-14 w-14 items-center justify-center rounded-2xl "
               >
-                <BookOpen className="h-5 w-5" aria-hidden="true" />
+                <img
+                  src={logo}
+                  alt="Scrapiify Logo"
+                  className="h-20 w-20 object-contain"
+                />
               </motion.span>
               <span className="min-w-0 font-display text-xl sm:text-2xl font-semibold tracking-tight text-ink">
-                ScrapBook
+                Scrapiify
               </span>
             </Link>
           </div>

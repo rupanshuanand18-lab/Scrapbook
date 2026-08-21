@@ -44,7 +44,7 @@ export default function Landing() {
   // Filter out the College Memory book and map remaining preview books into shelf items
   const filteredBooks = previewBooks.filter(b => b.title.toLowerCase() !== 'college memories' && !b.title.toLowerCase().includes('college'));
   const displayItems = filteredBooks.map((b, idx) => ({ ...b, id: idx }));
-  
+
   const chunkedBooks = []
   for (let i = 0; i < displayItems.length; i += 3) {
     chunkedBooks.push(displayItems.slice(i, i + 3))
@@ -55,14 +55,14 @@ export default function Landing() {
       {/* Luxury Ambient Background Layers with Enhanced Pulse */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute inset-0 opacity-[0.015] mix-blend-overlay bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:20px_20px]" />
-        
+
         {/* Dynamic Glowing Aurora Orbs */}
-        <motion.div 
+        <motion.div
           animate={{ opacity: [0.05, 0.12, 0.05], scale: [1, 1.08, 1], x: [0, 30, 0] }}
           transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
           className="absolute -top-40 -left-40 w-[750px] h-[750px] bg-gradient-to-br from-pink-300/30 via-gold/10 to-transparent rounded-full blur-[100px]"
         />
-        <motion.div 
+        <motion.div
           animate={{ opacity: [0.04, 0.1, 0.04], scale: [1.02, 0.95, 1.02], y: [0, -40, 0] }}
           transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
           className="absolute top-1/3 -right-40 w-[650px] h-[650px] bg-gradient-to-bl from-amber-200/20 via-pink-200/10 to-transparent rounded-full blur-[130px]"
@@ -138,8 +138,8 @@ export default function Landing() {
               transition={{ delay: 0.2, duration: 0.5 }}
               className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-pink-500/10 border border-pink-accent/30 text-pink-accent text-xs font-semibold uppercase tracking-[0.2em] mb-8 shadow-sm backdrop-blur-md"
             >
-              <Sparkles className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '4s' }} /> 
-              <span>Live Collaborative Scrapbooking</span>
+              <Sparkles className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '4s' }} />
+              <span>Scrapbooking</span>
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-1" />
             </motion.div>
 
@@ -192,20 +192,20 @@ export default function Landing() {
             >
               <div className="w-64 sm:w-[20rem] h-[24rem] sm:h-[28rem] rounded-r-2xl rounded-l shadow-2xl group-hover:shadow-book-hover transition-all duration-500 border-l-[14px] border-warm-brown relative overflow-hidden sunlight-glow">
                 <AnimatePresence mode="wait">
-                  <motion.div 
+                  <motion.div
                     key={selectedPreviewTheme.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.4 }}
-                    className={`absolute inset-0 bg-gradient-to-br ${selectedPreviewTheme.gradient}`} 
+                    className={`absolute inset-0 bg-gradient-to-br ${selectedPreviewTheme.gradient}`}
                   />
                 </AnimatePresence>
 
                 <div className="absolute top-12 left-14 w-28 h-6 washi-tape-accent pointer-events-none opacity-85 shadow-sm" />
 
                 <div className="absolute bottom-10 left-10 right-10 z-10">
-                  <motion.span 
+                  <motion.span
                     key={selectedPreviewTheme.name}
                     initial={{ y: 5, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -307,9 +307,9 @@ export default function Landing() {
             </p>
           </motion.div>
 
-          <div className="bg-[#fdfbf7]">
+          <div >
             <div className="relative bg-gradient-to-b from-[#e8e2d5] via-[#d5ccbc] to-[#bfb5a2] rounded-[50px] sm:rounded-[70px] p-6 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.1),inset_0_2px_6px_rgba(255,255,255,0.7)] border-[6px] sm:border-[8px] border-[#a89d89] overflow-hidden">
-              
+
               {/* Warm glow container */}
               <div className="absolute inset-4 sm:inset-6 rounded-[40px] sm:rounded-[55px] border-[2px] border-yellow-200/90 shadow-[inset_0_0_20px_rgba(253,224,71,0.5),0_0_20px_rgba(250,204,21,0.4)] pointer-events-none z-0" />
 
@@ -323,7 +323,7 @@ export default function Landing() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 sm:gap-16 items-center px-6 sm:px-16 lg:px-24 max-w-5xl mx-auto [perspective:1400px]">
                       {shelf.map((book, i) => (
                         <div key={book.title} className="flex justify-center group cursor-pointer" onClick={() => navigate('/signup')}>
-                          <motion.div 
+                          <motion.div
                             initial={{ opacity: 0, y: 30 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
@@ -424,7 +424,7 @@ export default function Landing() {
 
       <footer className="py-12 text-center text-ink-muted text-xs sm:text-sm border-t border-beige/40 relative z-10 bg-parchment/20">
         <p className="font-handwritten text-xl text-pink-accent mb-2">made with love & memories ✨</p>
-        <p>© 2026 ScrapBook — where your memories belong[cite: 1].</p>
+        <p>© 2026 Scrapiify — where your memories belong[cite: 1].</p>
       </footer>
     </div>
   )
